@@ -1,16 +1,24 @@
 import os
-
 from tqdm import tqdm
-
 import urllib
-
 import tarfile
-
 import zipfile
-
 import librosa
-
 import numpy as np
+import soundfile as sf
+
+def save_wav(path, wav, fs):
+    """
+    Save .wav file.
+
+    Argument/s:
+        path - absolute path to save .wav file.
+        wav - waveform to be saved.
+        fs - sampling frequency.
+    """
+    wav = np.squeeze(wav)
+    # if isinstance(wav[0], np.float32): wav = np.asarray(np.multiply(wav, 32768.0), dtype=np.int16)
+    sf.write(path, wav, fs)
 
 def makedir_exist_ok(dirpath):
     """create the folder if it does not exist"""
@@ -213,9 +221,9 @@ def snr_mixer(clean, noise, snr):
     return noisyspeech, valid, scaled_clean, scaled_noise
 
 
-def quantize_audio(data, num_bits=8):
+def quantize_spectrum(data, num_bits=8):
     """
-    Quantize audio
+    Quantize spectrum
     """
 
     step_size = 1.0 / 2 ** (num_bits)
@@ -224,3 +232,9 @@ def quantize_audio(data, num_bits=8):
     q_data = np.clip(q_data, 0, max_val)
 
     return np.uint8(q_data)
+
+def normalize_quantized_spectrum(data, num_bits=8):
+    """
+    Normalize Quantized spectrum
+    """
+    return data/ 2 ** (num_bits)
