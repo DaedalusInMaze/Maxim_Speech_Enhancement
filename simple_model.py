@@ -33,6 +33,7 @@ class SENetv0(nn.Module):
             nn.BatchNorm1d(96),
             nn.MaxPool1d(2), # in : 96 x 18, out: 96 x 9            
             nn.Conv1d(96, 257, 9), # in : 96 x 9, out: 161 x 1
+            nn.ReLU()
         )
 
 
