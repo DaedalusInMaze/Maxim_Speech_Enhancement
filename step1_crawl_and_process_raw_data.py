@@ -14,7 +14,7 @@ args = parser.parse_args()
 
 noise_type = {0 : 'white', 1 : 'siren'}
 # NOTE: for quick testing to only download small portion of repo, make 100 to resample all repo (VERY LONG)
-speech_repo_resample_percent = 2  # 1-100%
+speech_repo_resample_percent = 100  # 1-100%
 
 #create paths
 raw_folder_speech = os.path.join(DATADIR, 'raw_speech')

@@ -1,5 +1,0 @@
-0it [00:00, ?it/s]Processing 1 of 46 data2021-11-14 07:04:31.738509: I tensorflow/core/platform/cpu_feature_guard.cc:151] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
-To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
-2021-11-14 07:04:32.686110: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1525] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 46613 MB memory:  -> device: 0, name: Quadro RTX 8000, pci bus id: 0000:01:00.0, compute capability: 7.5
-2021-11-14 07:04:32.689735: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1525] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 46613 MB memory:  -> device: 1, name: Quadro RTX 8000, pci bus id: 0000:03:00.0, compute capability: 7.5
-1it [00:09,  9.89s/it]Processing 2 of 46 data2it [00:24, 12.73s/it]Processing 3 of 46 data3it [01:52, 47.08s/it]Processing 4 of 46 data4it [03:46, 73.29s/it]Processing 5 of 46 data5it [14:41, 283.34s/it]Processing 6 of 46 data

@@ -1,0 +1,19 @@
+[W 2021-11-17 20:48:16.664 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2021-11-17 20:48:16.664 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2021-11-17 20:48:16.664 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[I 2021-11-17 20:48:16.664 LabApp] JupyterLab extension loaded from C:\ProgramData\Anaconda3\envs\se\lib\site-packages\jupyterlab
+[I 2021-11-17 20:48:16.680 LabApp] JupyterLab application directory is C:\ProgramData\Anaconda3\envs\se\share\jupyter\lab
+[I 20:48:16.680 NotebookApp] The port 8889 is already in use, trying another port.
+[I 20:48:16.680 NotebookApp] Serving notebooks from local directory: C:\Users\se\Documents\se
+[I 20:48:16.680 NotebookApp] Jupyter Notebook 6.4.6 is running at:
+[I 20:48:16.680 NotebookApp] http://localhost:8890/?token=9b16ac54174f418381968bd7359846a803c7f14490295475
+[I 20:48:16.680 NotebookApp]  or http://127.0.0.1:8890/?token=9b16ac54174f418381968bd7359846a803c7f14490295475
+[I 20:48:16.680 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 20:48:16.680 NotebookApp] 
+    
+    To access the notebook, open this file in a browser:
+        file:///C:/Users/se/AppData/Roaming/jupyter/runtime/nbserver-9292-open.html
+    Or copy and paste one of these URLs:
+        http://localhost:8890/?token=9b16ac54174f418381968bd7359846a803c7f14490295475
+     or http://127.0.0.1:8890/?token=9b16ac54174f418381968bd7359846a803c7f14490295475
+[I 20:49:59.253 NotebookApp] 302 GET /?token=9b16ac54174f418381968bd7359846a803c7f14490295475 (::1) 0.000000ms
