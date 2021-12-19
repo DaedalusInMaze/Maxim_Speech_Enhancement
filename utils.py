@@ -199,27 +199,18 @@ def snr_mixer(clean, noise, snr):
     # Normalizing to rms equal to 1
     rmsclean = np.mean(clean[:] ** 2) ** 0.5
     rmsnoise = np.mean(noise[:] ** 2) ** 0.5
-    noisyspeech = []
 
-    if rmsclean != 0 and rmsnoise != 0:
-        scalarclean = 1 / rmsclean
-        clean = clean * scalarclean
-        scalarnoise = 1 / rmsnoise
-        noise = noise * scalarnoise
+    cleanfactor = 10 ** (snr / 20)
 
+    if rmsnoise != 0:
+        a = rmsclean/(rmsnoise*cleanfactor)
         # Set the noise level for a given SNR
-        cleanfactor = 10 ** (snr / 20)
-        noisyspeech = cleanfactor * clean + noise
-        noisyspeech = noisyspeech / (scalarnoise + cleanfactor * scalarclean)
-        scaled_clean = cleanfactor * clean / (scalarnoise + cleanfactor * scalarclean)
-        scaled_noise = noise / (scalarnoise + cleanfactor * scalarclean)
-
+        noisyspeech = clean + a*noise
         valid = True
-
+        return noisyspeech, valid, a*noise
     else:
         valid = False
-    return noisyspeech, valid, scaled_clean, scaled_noise
-
+        return clean, valid, noise
 
 def quantize_spectrum(data, num_bits=8):
     """
@@ -237,4 +228,4 @@ def normalize_quantized_spectrum(data, num_bits=8):
     """
     Normalize Quantized spectrum
     """
-    return data/ 2 ** (num_bits)
+    return data/ (2 ** (num_bits) - 1)

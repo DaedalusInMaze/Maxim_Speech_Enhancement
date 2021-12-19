@@ -5,7 +5,7 @@ import torch.nn as nn
 class SENetv0(nn.Module):
 
     # output = 161 STFT feats
-    def __init__(self, num_channels=161, dimensions=(161, 1), bias=False, **kwargs):
+    def __init__(self, num_channels=257, dimensions=(257, 1), bias=True, **kwargs):
         super().__init__() ## 继承nn.Module的属性
 
         self.project = nn.Sequential(
