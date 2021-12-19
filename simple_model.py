@@ -10,7 +10,7 @@ class SENetv0(nn.Module):
 
         self.project = nn.Sequential(
 
-            nn.Conv1d(257, 256, 9), # in : 161 x 128; out: 256 x 120
+            nn.Conv1d(257, 256, 9), # in : 257 x 128; out: 256 x 120
             nn.ReLU(inplace=True),   
             
             nn.MaxPool1d(2),# in : 256 x 120; out: 256 x 60           
@@ -32,7 +32,7 @@ class SENetv0(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(96),
             nn.MaxPool1d(2), # in : 96 x 18, out: 96 x 9            
-            nn.Conv1d(96, 257, 9), # in : 96 x 9, out: 161 x 1
+            nn.Conv1d(96, 257, 9), # in : 96 x 9, out: 257 x 1
             nn.ReLU()
         )
 
