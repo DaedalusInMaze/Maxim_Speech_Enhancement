@@ -1,5 +1,5 @@
 
-DATADIR = "D:/SE"
+DATADIR = "SE"
 SAMPLING_RATE = 16000
 URL_SPEECH = ["https://www.openslr.org/resources/12/dev-clean.tar.gz"] #this list is to be extended 
 SNR = 6
