@@ -47,7 +47,7 @@ for epoch in tqdm(range(3)):
         loss.backward()
         optimizer.step()
     print(_loss)
-    if epoch and not epoch%2:
+    if True: #epoch and not epoch%2:
         for r in range(len(testset[0])):
             noisy_spectrum = testset[0][r]
             clean_spectrum = testset[1][r]
@@ -73,18 +73,22 @@ for epoch in tqdm(range(3)):
             
             save_wav(os.path.join(DATADIR,'predicted3', 'noisy' + str(r) + '.wav'), noisy_audio, SAMPLING_RATE)
             save_wav(os.path.join(DATADIR,'predicted3', 'pred' + str(r) + '_epoch_' + str(epoch) + '.wav'), predicted_audio, SAMPLING_RATE)
-            save_wav(os.path.join(DATADIR,'predicted3', 'noise' + str(r) + '_epoch_' + str(epoch) + '.wav'), clean_audio, SAMPLING_RATE)
+            save_wav(os.path.join(DATADIR,'predicted3', 'clean' + str(r) + '.wav'), clean_audio, SAMPLING_RATE)
             MODEL_PATH = 'models/' + str(EXP_NO) + '_epoch_' + str(epoch) + '.pkl'
             torch.save(model.state_dict(), MODEL_PATH)
-            print('seg SNR')
-            print(round(pysepm.SNRseg(clean_audio, noisy_audio, SAMPLING_RATE), 2))
-            print(round(pysepm.SNRseg(clean_audio, predicted_audio, SAMPLING_RATE), 2))
-            print(round(pysepm.SNRseg(clean_audio, clean_audio, SAMPLING_RATE), 2))
+            print(f'Epoch {epoch}, File {r}')
+            noisy_SNR = round(pysepm.SNRseg(clean_audio, noisy_audio, SAMPLING_RATE), 2)
+            new_SNR = round(pysepm.SNRseg(clean_audio, predicted_audio, SAMPLING_RATE), 2)
+            clean_SNR = round(pysepm.SNRseg(clean_audio, clean_audio, SAMPLING_RATE), 2)
+            print(f'SNR: noisy = {noisy_SNR}, enhanced = {new_SNR} and clean = {clean_SNR}')
 
-            print('STOI')
-            print(pysepm.stoi.stoi(clean_audio, noisy_audio, SAMPLING_RATE))
-            print(pysepm.stoi.stoi(clean_audio, predicted_audio, SAMPLING_RATE))
-
-            print('PESQ')
-            print(pysepm.pesq(clean_audio, noisy_audio, SAMPLING_RATE))
-            print(pysepm.pesq(clean_audio, predicted_audio, SAMPLING_RATE))
+            noisy_STOI = round(pysepm.stoi.stoi(clean_audio, noisy_audio, SAMPLING_RATE), 2)
+            new_STOI = round(pysepm.stoi.stoi(clean_audio, predicted_audio, SAMPLING_RATE), 2)
+            clean_STOI = round(pysepm.stoi.stoi(clean_audio, clean_audio, SAMPLING_RATE), 2)
+            print(f'STOI: noisy = {noisy_STOI}, enhanced = {new_STOI} and clean = {clean_STOI}')
+            
+            noisy_PESQ = round(pysepm.pesq(clean_audio, noisy_audio, SAMPLING_RATE)[1], 2)
+            new_PESQ = round(pysepm.pesq(clean_audio, predicted_audio, SAMPLING_RATE)[1], 2)
+            clean_PESQ = round(pysepm.pesq(clean_audio, clean_audio, SAMPLING_RATE)[1], 2)
+            
+            print(f'PESQ: noisy = {noisy_PESQ}, enhanced = {new_PESQ} and clean = {clean_PESQ}')
