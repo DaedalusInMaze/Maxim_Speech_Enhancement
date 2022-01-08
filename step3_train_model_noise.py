@@ -33,7 +33,7 @@ for r in range(len(testset[0])):
     clean_spectrum = testset[1][r]
     noisy_angle = testset[2][r] 
     STFT_clean = normalize_quantized_spectrum(clean_spectrum[CHUNK_SIZE:]) * (np.cos(noisy_angle[CHUNK_SIZE:]) + 1j * np.sin(noisy_angle[CHUNK_SIZE:]))
-	STFT_noisy = normalize_quantized_spectrum(noisy_spectrum[CHUNK_SIZE:]) * (np.cos(noisy_angle[CHUNK_SIZE:]) + 1j * np.sin(noisy_angle[CHUNK_SIZE:]))
+    STFT_noisy = normalize_quantized_spectrum(noisy_spectrum[CHUNK_SIZE:]) * (np.cos(noisy_angle[CHUNK_SIZE:]) + 1j * np.sin(noisy_angle[CHUNK_SIZE:]))
     clean_audio = librosa.istft(STFT_clean.T, hop_length=N_s, win_length=N_d, window='hanning', center=True, dtype=None, length=None)
     noisy_audio = librosa.istft(STFT_noisy.T, hop_length=N_s, win_length=N_d, window='hanning', center=True, dtype=None, length=None)       
     save_wav(os.path.join(DATADIR,'predicted3', 'clean' + str(r) + '.wav'), clean_audio, SAMPLING_RATE) 
