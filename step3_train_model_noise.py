@@ -79,7 +79,8 @@ for epoch in tqdm(range(num_epochs)):
             pred_out = torch.squeeze(model(au_in)).cpu().detach().numpy()
             spectral_subtraction = noisy_spectrum[CHUNK_SIZE:] - pred_out
             spectral_subtraction = np.clip(spectral_subtraction, 0, np.amax(spectral_subtraction))
-
+            STFT_clean = normalize_quantized_spectrum(clean_spectrum[CHUNK_SIZE:]) * (np.cos(noisy_angle[CHUNK_SIZE:]) + 1j * np.sin(noisy_angle[CHUNK_SIZE:]))
+            clean_audio = librosa.istft(STFT_clean.T, hop_length=N_s, win_length=N_d, window='hanning', center=True, dtype=None, length=None)
             STFT_predicted = normalize_quantized_spectrum(spectral_subtraction) * (np.cos(noisy_angle[CHUNK_SIZE:]) + 1j * np.sin(noisy_angle[CHUNK_SIZE:]))
             predicted_audio = librosa.istft(STFT_predicted.T, hop_length=N_s, win_length=N_d, window='hanning', center=True, dtype=None, length=None)
             save_wav(os.path.join(DATADIR,'predicted3', 'pred' + str(r) + '_epoch_' + str(epoch + 1) + '.wav'), predicted_audio, SAMPLING_RATE)
