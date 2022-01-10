@@ -91,5 +91,9 @@ for epoch in tqdm(range(num_epochs)):
             metrics[1, r, epoch + 1] = round(pysepm.stoi.stoi(clean_audio, predicted_audio, SAMPLING_RATE), 2)
             metrics[2, r, epoch + 1] = round(pysepm.pesq(clean_audio, predicted_audio, SAMPLING_RATE)[1], 2)
 
-exp_name = str(EXP_NO) + '.csv'
-savetxt(exp_name, metrics, delimiter=',')
+exp_name = str(EXP_NO) + '_SNR.csv'
+savetxt(exp_name[0], metrics, delimiter=',')
+exp_name = str(EXP_NO) + '_STOI.csv'
+savetxt(exp_name[1], metrics, delimiter=',')
+exp_name = str(EXP_NO) + '_PESQ.csv'
+savetxt(exp_name[2], metrics, delimiter=',')
