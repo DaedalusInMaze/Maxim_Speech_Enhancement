@@ -20,7 +20,7 @@ model = SENetv0().cuda()
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0003)
 loss_fn = torch.nn.MSELoss()
-num_epochs = 2
+num_epochs = 50
 training_set = []
 test_set = []
 #print('preparing training_set')
@@ -92,8 +92,8 @@ for epoch in tqdm(range(num_epochs)):
             metrics[2, r, epoch + 1] = round(pysepm.pesq(clean_audio, predicted_audio, SAMPLING_RATE)[1], 2)
 
 exp_name = str(EXP_NO) + '_SNR.csv'
-savetxt(exp_name, metrics[0], delimiter=',')
+savetxt(exp_name, metrics[0], fmt='%.2f', delimiter=',')
 exp_name = str(EXP_NO) + '_STOI.csv'
-savetxt(exp_name, metrics[1], delimiter=',')
+savetxt(exp_name, metrics[1], fmt='%.2f', delimiter=',')
 exp_name = str(EXP_NO) + '_PESQ.csv'
-savetxt(exp_name, metrics[2], delimiter=',')
+savetxt(exp_name, metrics[2], fmt='%.2f', delimiter=',')
