@@ -6,14 +6,13 @@ import tensorflow as tf
 
 import argparse
 
-
 parser = argparse.ArgumentParser(description='Speech Enhancement for Hearing Aid Devices')
-parser.add_argument('--noise_type', type=int, default=0, help='0: white noise, 1: siren')
+parser.add_argument('--noise_type', type=int, default=0, help='0: white noise, 1: siren, 2: baby')
 parser.add_argument('--clean_file_no', type=int, default=0, help='select file source')
 
 args = parser.parse_args()
 
-noise_type = {0 : 'white', 1 : 'siren'}
+noise_type = {0 : 'white', 1 : 'siren', 2 : 'baby'}
 
 #create paths
 raw_folder_speech = os.path.join(DATADIR, 'raw_speech')

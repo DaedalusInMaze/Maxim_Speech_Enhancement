@@ -7,12 +7,12 @@ import argparse
 
 
 parser = argparse.ArgumentParser(description='Speech Enhancement for Hearing Aid Devices')
-parser.add_argument('--noise_type', type=int, default=0, help='0: white noise, 1: siren')
+parser.add_argument('--noise_type', type=int, default=0, help='0: white noise, 1: siren, 2: baby')
 parser.add_argument('--clean_file_no', type=int, default=0, help='select file source')
 
 args = parser.parse_args()
 
-noise_type = {0 : 'white', 1 : 'siren'}
+noise_type = {0 : 'white', 1 : 'siren', 2 : 'baby'}
 # NOTE: for quick testing to only download small portion of repo, make 100 to resample all repo (VERY LONG)
 speech_repo_resample_percent = 100  # 1-100%
 
