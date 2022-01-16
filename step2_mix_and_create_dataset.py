@@ -3,6 +3,7 @@ import random
 import torch
 from config import *
 import tensorflow as tf
+import gc
 
 import argparse
 
@@ -49,7 +50,6 @@ angles = []
 feat_out = []
 noise_out = []
 mask_out = []
-data_types = []
 for count, data_frame in tqdm(enumerate(clean)):
     for noise in noise_set:
         noise_start = random.randint(0, noise.shape[0]- data_frame.shape[0])
@@ -69,13 +69,16 @@ for count, data_frame in tqdm(enumerate(clean)):
             feat_out.append(quantize_spectrum(clean_feat))
             noise_out.append(quantize_spectrum(noise_feat))
             # is the recoding used in training (0) or test (1)
-            data_type = (np.random.rand(1) + 0.1).astype(int)
-            data_types.append(data_type)
             angles.append(noisy_angle)
             mask_out.append(quantize_spectrum(mask))
 print(len(feat_in))
 
-speech_dataset = (feat_in, feat_out, angles, mask_out, noise_out, data_types)
+speech_dataset = (feat_in, feat_out, angles, mask_out, noise_out)
+to_delete = ['feat_in', 'feat_out', 'angles', 'mask_out', 'noise_out']
+for _var in to_delete:
+    if _var in locals() or _var in globals():
+        exec(f'del {_var}')
+gc.collect()
 torch.save(speech_dataset, os.path.join(processed_folder, data_file))
 print(f'\rDataset created: {os.path.join(processed_folder, data_file)}')
 
