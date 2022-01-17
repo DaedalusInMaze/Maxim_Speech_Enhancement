@@ -46,7 +46,7 @@ else:
         _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
         feat_in.append(_in)
         feat_out.append(_out)
-        angles.apped(_ang)
+        angles.append(_ang)
         mask_out.append(_m)
         noise_out.append(_n)
         _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', test_set_filename))
