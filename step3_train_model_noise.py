@@ -37,6 +37,7 @@ else:
         test_set_filename = 'test-' + n + '.pt'
         dataset.append(torch.load(os.path.join(DATADIR, 'processed', training_set_filename)))
         testset.append(torch.load(os.path.join(DATADIR,'processed', test_set_filename)))
+        print(dataset[i].shape)
     dataset = np.stack(dataset)
     testset = np.stack(testset)
     print(testset.shape)
