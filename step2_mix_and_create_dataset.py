@@ -74,6 +74,7 @@ for count, data_frame in tqdm(enumerate(clean)):
 print(len(feat_in))
 
 speech_dataset = (feat_in, feat_out, angles, mask_out, noise_out)
+print('reached here')
 to_delete = ['feat_in', 'feat_out', 'angles', 'mask_out', 'noise_out']
 for _var in to_delete:
     if _var in locals() or _var in globals():
