@@ -44,6 +44,7 @@ else:
         training_set_filename = 'dataset-' + n + '.pt'
         test_set_filename = 'test-' + n + '.pt'
         _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
+        print(_in.shape)
         feat_in.append(_in)
         feat_out.append(_out)
         angles.append(_ang)
@@ -58,7 +59,7 @@ else:
     to_stack = ['feat_in', 'feat_out', 'angles', 'mask_out', 'noise_out', 'test_feat_in', 'test_feat_in', 'test_feat_out', 'test_angles', 'test_mask_out', 'test_noise_out']
     for _var in to_stack:
         exec(f'{_var} = np.stack({_var})')
-        exec(f'print({_var}.shape)')
+        
     dataset = (feat_in, feat_out, angles, mask_out, noise_out)
     testset = (test_feat_in, test_feat_out, test_angles, test_mask_out, test_noise_out)
 
