@@ -38,17 +38,17 @@ else:
             test_feat_in, test_feat_out, test_angles, test_mask_out, test_noise_out = torch.load(os.path.join(DATADIR, 'processed', test_set_filename))
         else:
             _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
-            feat_in.append(_in)
-            feat_out.append(_out)
-            angles.append(_ang)
-            mask_out.append(_m)
-            noise_out.append(_n)
+            feat_in = feat_in + _in
+            feat_out = feat_out +_out
+            angles = angles + _ang
+            mask_out = mask_out + _m
+            noise_out = noise_out + _n
             _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', test_set_filename))
-            test_feat_in.append(_in)
-            test_feat_out.append(_out)
-            test_angles.append(_ang)
-            test_mask_out.append(_m)
-            test_noise_out.append(_n)
+            test_feat_in = test_feat_in + _in
+            test_feat_out = test_feat_out + _out
+            test_angles = test_angles + _ang
+            test_mask_out = test_mask_out + _m
+            test_noise_out = test_noise_out + _n
         print(len(feat_in))
         
     dataset = (feat_in, feat_out, angles, mask_out, noise_out)
