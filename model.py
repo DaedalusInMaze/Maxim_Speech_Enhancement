@@ -41,7 +41,7 @@ def load_model(model, optimizer, action='train', **kargs):
     
     elif action == 'retrain':
         
-        print(f'load model from {kargs['pretrained_model_path']}')
+        print(f"load model from {kargs['pretrained_model_path']}")
         
         checkpoint = torch.load(kargs['pretrained_model_path'])
         
