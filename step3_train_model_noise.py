@@ -10,6 +10,8 @@ from utils import save_wav, normalize_quantized_spectrum
 import pysepm
 from numpy import savetxt
 
+import argparse
+
 noise_type_helper = '0: all, 1: white noise, 2: siren, 3: baby'
 parser = argparse.ArgumentParser(description='Speech Enhancement for Hearing Aid Devices')
 parser.add_argument('--noise_type', type=int, default=1, help=noise_type_helper)
