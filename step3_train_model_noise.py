@@ -10,10 +10,22 @@ from utils import save_wav, normalize_quantized_spectrum
 import pysepm
 from numpy import savetxt
 
+noise_type_helper = '0: all, 1: white noise, 2: siren, 3: baby'
+parser = argparse.ArgumentParser(description='Speech Enhancement for Hearing Aid Devices')
+parser.add_argument('--noise_type', type=int, default=1, help=noise_type_helper)
+
+
+args = parser.parse_args()
+
+noise_type = {0 : 'white', 1 : 'siren', 2 : 'baby'}
+
 
 ##load data
-dataset = torch.load(os.path.join(DATADIR,'processed/dataset-speech.pt'))
-testset = torch.load(os.path.join(DATADIR,'processed/test-speech.pt'))
+if args.noise_type:
+    training_set_filename = 'dataset-' + noise_type[args.noise_type] + '.pt'
+    test_set_filename = 'test-' + noise_type[args.noise_type] + '.pt'
+    dataset = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
+    testset = torch.load(os.path.join(DATADIR,'processed', test_set_filename))
 
 #load model to cuda
 model = SENetv0().cuda()
