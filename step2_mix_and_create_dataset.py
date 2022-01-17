@@ -20,7 +20,7 @@ raw_folder_noise = os.path.join(DATADIR, 'raw_noise')
 processed_folder = os.path.join(DATADIR, 'processed')
 makedir_exist_ok(processed_folder)
 speech_file = os.path.join(raw_folder_speech, "speech_" + str(args.clean_file_no) + ".pt")
-
+test_file = os.path.join(raw_folder_speech, "test.pt")
 if os.path.exists(speech_file):
     clean = torch.load(speech_file)
     
