@@ -29,27 +29,27 @@ if args.noise_type:
     dataset = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
     testset = torch.load(os.path.join(DATADIR,'processed', test_set_filename))
 else:
-    _vars = ['feat_in', 'feat_out', 'angles', 'mask_out', 'noise_out', 'test_feat_in', 'test_feat_in', 'test_feat_out', 'test_angles', 'test_mask_out', 'test_noise_out']
-    for _var in _vars:
-        exec(f'{_var} = []')
     for i in range(3):
         n = noise_type[i]
         training_set_filename = 'dataset-' + n + '.pt'
         test_set_filename = 'test-' + n + '.pt'
-        _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
-        feat_in.append(_in)
+        if not i:
+            feat_in, feat_out, angles, mask_out, noise_out = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
+            test_feat_in, test_feat_out, test_angles, test_mask_out, test_noise_out = torch.load(os.path.join(DATADIR, 'processed', test_set_filename))
+        else:
+            _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
+            feat_in.append(_in)
+            feat_out.append(_out)
+            angles.append(_ang)
+            mask_out.append(_m)
+            noise_out.append(_n)
+            _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', test_set_filename))
+            test_feat_in.append(_in)
+            test_feat_out.append(_out)
+            test_angles.append(_ang)
+            test_mask_out.append(_m)
+            test_noise_out.append(_n)
         print(len(feat_in))
-        feat_out.append(_out)
-        angles.append(_ang)
-        mask_out.append(_m)
-        noise_out.append(_n)
-        _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', test_set_filename))
-        test_feat_in.append(_in)
-        test_feat_out.append(_out)
-        test_angles.append(_ang)
-        test_mask_out.append(_m)
-        test_noise_out.append(_n)
-
         
     dataset = (feat_in, feat_out, angles, mask_out, noise_out)
     testset = (test_feat_in, test_feat_out, test_angles, test_mask_out, test_noise_out)
