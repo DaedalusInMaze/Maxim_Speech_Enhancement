@@ -14,13 +14,15 @@ from torch.utils.data import DataLoader
 
 from config import *
 
-from model import SePipline
+from model import SePipline, load_model
 
 from trainer import Trainer
 
 
 recovered_path = os.path.join(DATADIR, 'recovered')
 model_path = os.path.join(DATADIR, 'models')
+
+
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -34,7 +36,7 @@ noise_path.append(os.path.join(raw_noise_path, 'white_noise.pt'))
 noise_path.append(os.path.join(raw_noise_path, 'siren_noise.pt'))
 noise_path.append(os.path.join(raw_noise_path, 'baby.pt'))
 
-noise_dataset = NoisyData(train_list[:], SNR, noise_path, random_noise=True)
+noise_dataset = NoisyData(train_list, SNR, noise_path, random_noise=True)
 valid_dataset = NoisyData(valid_list[:50], SNR, noise_path, random_seed=True)
 test_dataset = NoisyData(test_list, SNR, noise_path, random_seed=True)
 
@@ -53,8 +55,16 @@ SE = SePipline(
     transform_type = transform_type)
 ##########
 
+
 optimizer = torch.optim.Adam(SE.parameters(), lr=lr)
 criterion = nn.MSELoss()
+
+epoch, SE, optimizer = load_model(model= SE, 
+                                  optimizer= optimizer,
+                                  action= action,
+                                  pretrained_model_path = os.path.join(model_path, pretrain_model_name))
+
+                                  
 
 trainer = Trainer(model= SE,
                   train_loader= train_dataloader, 
@@ -64,7 +74,8 @@ trainer = Trainer(model= SE,
                   criterion= criterion, 
                   device= DEVICE)
 
-trainer.train(epochs= EPOCH,
+trainer.train(epoch= epoch,
+              epochs= EPOCH,
               save_model=True,
               hop_len=N_s, 
               win_len= N_d, 

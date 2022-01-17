@@ -13,3 +13,5 @@ BATCH_SIZE = 1
 lr = 1e-4
 
 transform_type = 'logmag'
+action = 'retrain'
+pretrain_model_name = '1_epoch.pth.tar'

@@ -20,15 +20,18 @@ class Trainer():
         self.criterion = criterion
         self.device = device
         self.count = 0
+        
+        
 
-    def train(self, epochs, save_model, *args, **kwargs):
+    def train(self, epoch, epochs, save_model, *args, **kwargs):
         """
+        - epoch: starting epoch
         - epochs: int 玄学
         - save_model: boolean, 保存模型吗？ 保存到models文件夹下
         """
         best_loss = 1_000_000_000
 
-        for epoch in range(epochs):
+        for epoch in range(epoch, epoch + epochs + 1):
 
             self._train(epoch)
 
@@ -42,10 +45,19 @@ class Trainer():
 
 #                         os.mkdir(kwargs['model_path'])
                     
-#                     torch.save(self.model.state_dict(), os.path.join(kwargs['model_path'], 'model_1.pkl'))
+            if save_model:
+                if not os.path.exists(kwargs['model_path']):
+                    os.mkdir(kwargs['model_path'])
 
-#                     best_loss = loss
+                state_dict = {
+                    'epoch': epoch,
+                    'model': self.model.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                    'best_loss': best_loss
+                }
             
+                torch.save(state_dict, os.path.join(kwargs['model_path'], f'{epoch}_epoch.pth.tar'))
+                
             self._test(self.test_loader, epoch, *args, **kwargs)
 
 
@@ -58,7 +70,7 @@ class Trainer():
 
         for batch in train_bar:
 
-            train_bar.set_description(f'Epoch {epoch + 1} train')
+            train_bar.set_description(f'Epoch {epoch} train')
 
             for key, value in batch.items():
 
@@ -91,7 +103,7 @@ class Trainer():
 
         for batch in valid_bar:
 
-            valid_bar.set_description(f'Epoch {epoch + 1} valid')
+            valid_bar.set_description(f'Epoch {epoch} valid')
 
             for key, value in batch.items():
 
@@ -125,7 +137,7 @@ class Trainer():
         
         for batch in test_bar:
             
-            test_bar.set_description(f'Epoch {epoch + 1} test')
+            test_bar.set_description(f'Epoch {epoch} test')
             
             for key, value in batch.items():
 
@@ -169,11 +181,11 @@ class Trainer():
                         self.count += 1
 
                     save_wav(path= os.path.join(kwargs['recovered_path'],
-                                                f'epoch_{epoch + 1}_recovered_speech_{i}.wav'),
+                                                f'epoch_{epoch}_recovered_speech_{i}.wav'),
                              wav= batch['pred_y'],
                              fs= kwargs['fs'])
             i += 1
-        print(f'\t test files are generated for Epoch {epoch + 1}!')
+        print(f'\t test files are generated for Epoch {epoch}!')
                 
         
         
