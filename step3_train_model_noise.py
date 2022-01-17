@@ -9,7 +9,7 @@ from sklearn.preprocessing import normalize
 from utils import save_wav, normalize_quantized_spectrum
 import pysepm
 from numpy import savetxt
-
+import random
 import argparse
 
 noise_type_helper = '0: all, 1: white noise, 2: siren, 3: baby'
@@ -67,10 +67,11 @@ training_set = []
 test_set = []
 #print('preparing training_set')
 
-EXP_NO = 1
+EXP_NO = 4
 metrics = np.zeros((3, len(testset[0]), num_epochs + 1)) #3 metrics for each recording per epoch
-
-for r in range(len(testset[0])):
+indices = list(range(len(testset[0])))
+random.shuffle(indices)
+for r in indices:
     noisy_spectrum = testset[0][r]
     clean_spectrum = testset[1][r]
     noisy_angle = testset[2][r] 
@@ -78,8 +79,8 @@ for r in range(len(testset[0])):
     STFT_noisy = normalize_quantized_spectrum(noisy_spectrum[CHUNK_SIZE:]) * (np.cos(noisy_angle[CHUNK_SIZE:]) + 1j * np.sin(noisy_angle[CHUNK_SIZE:]))
     clean_audio = librosa.istft(STFT_clean.T, hop_length=N_s, win_length=N_d, window='hanning', center=True, dtype=None, length=None)
     noisy_audio = librosa.istft(STFT_noisy.T, hop_length=N_s, win_length=N_d, window='hanning', center=True, dtype=None, length=None)       
-    save_wav(os.path.join(DATADIR,'predicted3', 'clean' + str(r) + '.wav'), clean_audio, SAMPLING_RATE) 
-    save_wav(os.path.join(DATADIR,'predicted3', 'noisy' + str(r) + '.wav'), noisy_audio, SAMPLING_RATE)
+    save_wav(os.path.join(DATADIR,'predicted5', 'clean' + str(r) + '.wav'), clean_audio, SAMPLING_RATE) 
+    save_wav(os.path.join(DATADIR,'predicted5', 'noisy' + str(r) + '.wav'), noisy_audio, SAMPLING_RATE)
     metrics[0, r, 0] = round(pysepm.SNRseg(clean_audio, noisy_audio, SAMPLING_RATE), 2)
     metrics[1, r, 0] = round(pysepm.stoi.stoi(clean_audio, noisy_audio, SAMPLING_RATE), 2)
     metrics[2, r, 0] = round(pysepm.pesq(clean_audio, noisy_audio, SAMPLING_RATE)[1], 2)
@@ -125,7 +126,7 @@ for epoch in tqdm(range(num_epochs)):
             clean_audio = librosa.istft(STFT_clean.T, hop_length=N_s, win_length=N_d, window='hanning', center=True, dtype=None, length=None)
             STFT_predicted = normalize_quantized_spectrum(spectral_subtraction) * (np.cos(noisy_angle[CHUNK_SIZE:]) + 1j * np.sin(noisy_angle[CHUNK_SIZE:]))
             predicted_audio = librosa.istft(STFT_predicted.T, hop_length=N_s, win_length=N_d, window='hanning', center=True, dtype=None, length=None)
-            save_wav(os.path.join(DATADIR,'predicted3', 'pred' + str(r) + '_epoch_' + str(epoch + 1) + '.wav'), predicted_audio, SAMPLING_RATE)
+            save_wav(os.path.join(DATADIR,'predicted5', 'pred' + str(r) + '_epoch_' + str(epoch + 1) + '.wav'), predicted_audio, SAMPLING_RATE)
             MODEL_PATH = 'models/' + str(EXP_NO) + '_epoch_' + str(epoch + 1) + '.pkl'
             torch.save(model.state_dict(), MODEL_PATH)
 
