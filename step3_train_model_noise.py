@@ -28,6 +28,21 @@ if args.noise_type:
     test_set_filename = 'test-' + noise_type[args.noise_type] + '.pt'
     dataset = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
     testset = torch.load(os.path.join(DATADIR,'processed', test_set_filename))
+else:
+    dataset = []
+    testset = []
+    for i in range(3):
+        n = noise_type[i]
+        training_set_filename = 'dataset-' + n + '.pt'
+        test_set_filename = 'test-' + n + '.pt'
+        dataset.append(torch.load(os.path.join(DATADIR, 'processed', training_set_filename)))
+        testset.append(torch.load(os.path.join(DATADIR,'processed', test_set_filename)))
+    dataset = np.stack(dataset)
+    testset = np.stack(testset)
+    print(testset.shape)
+
+
+
 
 #load model to cuda
 model = SENetv0().cuda()
