@@ -29,18 +29,38 @@ if args.noise_type:
     dataset = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
     testset = torch.load(os.path.join(DATADIR,'processed', test_set_filename))
 else:
-    dataset = []
-    testset = []
+    feat_in = []
+    feat_out = []
+    angles = []
+    mask_out = []
+    noise_out = []
+    test_feat_in = []
+    test_feat_out = []
+    test_angles = []
+    test_mask_out = []
+    test_noise_out = []
     for i in range(3):
         n = noise_type[i]
         training_set_filename = 'dataset-' + n + '.pt'
         test_set_filename = 'test-' + n + '.pt'
-        dataset.append(torch.load(os.path.join(DATADIR, 'processed', training_set_filename)))
-        testset.append(torch.load(os.path.join(DATADIR,'processed', test_set_filename)))
-        print(dataset[i].shape)
-    dataset = np.stack(dataset)
-    testset = np.stack(testset)
-    print(testset.shape)
+        _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', training_set_filename))
+        feat_in.append(_in)
+        feat_out.append(_out)
+        angles.apped(_ang)
+        mask_out.append(_m)
+        noise_out.append(_n)
+        _in, _out, _ang, _m, _n = torch.load(os.path.join(DATADIR, 'processed', test_set_filename))
+        test_feat_in.append(_in)
+        test_feat_out.append(_out)
+        test_angles.append(_ang)
+        test_mask_out.append(_m)
+        test_noise_out.append(_n)
+    to_stack = ['feat_in', 'feat_out', 'angles', 'mask_out', 'noise_out', 'test_feat_in', 'test_feat_in', 'test_feat_out', 'test_angles', 'test_mask_out', 'test_noise_out']
+    for _var in to_stack:
+        exec(f'{_var} = np.stack({_var})')
+        exec(f'print({_var}.shape)')
+    dataset = (feat_in, feat_out, angles, mask_out, noise_out)
+    testset = (test_feat_in, test_feat_out, test_angles, test_mask_out, test_noise_out)
 
 
 
