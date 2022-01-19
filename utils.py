@@ -8,6 +8,12 @@ import soundfile as sf
 
 import torch
 
+from tqdm import tqdm
+
+def load_noise(noise_paths):
+    print('loading noise')
+    return {i : torch.load(path) for i, path in tqdm(enumerate(noise_paths))}
+
 def save_wav(path, wav, fs):
     """
     Save .wav file.
@@ -17,7 +23,6 @@ def save_wav(path, wav, fs):
         fs - sampling frequency.
     """
     wav = np.squeeze(wav)
-    # if isinstance(wav[0], np.float32): wav = np.asarray(np.multiply(wav, 32768.0), dtype=np.int16)
     sf.write(path, wav, fs)
 
 def get_audio_path_list(dir, ext):
@@ -102,3 +107,23 @@ def normalize_quantized_spectrum(data, num_bits=8):
     Normalize Quantized spectrum
     """
     return data/ (2 ** (num_bits) - 1)
+
+
+def generate_test_files(path, noise_path, snr):
+    
+    noise = torch.load(noise_path)
+    
+    clean = load_audio(path = path)
+    
+    while True:
+    
+        noise_start = np.random.randint(0, noise.shape[0] - clean.shape[0] + 1)
+
+        noise_snippet = noise[noise_start : noise_start + clean.shape[0]]
+
+        valid, mixed, noise = snr_mixer(clean, noise_snippet, snr)
+        
+        if valid:
+            break
+        
+    return {'mixed': mixed, 'clean': clean, 'noise': noise}

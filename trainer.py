@@ -33,7 +33,7 @@ class Trainer():
 
         for epoch in range(epoch, epoch + epochs + 1):
 
-            self._train(epoch)
+            train_loss = self._train(epoch)
 
 #             loss = self._valid(epoch)
 
@@ -44,7 +44,10 @@ class Trainer():
 #                     if not os.path.exists(kwargs['model_path']):
 
 #                         os.mkdir(kwargs['model_path'])
-                    
+            if train_loss < best_loss:
+                
+                best_loss = train_loss
+            
             if save_model:
                 if not os.path.exists(kwargs['model_path']):
                     os.mkdir(kwargs['model_path'])
@@ -93,6 +96,8 @@ class Trainer():
         average_loss = round(total_loss / len(self.train_set), 4)
 
         print('\tLoss:', average_loss)
+        
+        return average_loss
 
 
     def _valid(self, epoch):
@@ -131,13 +136,13 @@ class Trainer():
 
     def _test(self, test_loader, epoch, *args, **kwargs):
         
-        test_bar = tqdm(test_loader)
+        # test_bar = tqdm(test_loader)
         
         i = 1
         
-        for batch in test_bar:
+        for batch in test_loader:
             
-            test_bar.set_description(f'Epoch {epoch} test')
+            # test_bar.set_description(f'Epoch {epoch} test')
             
             for key, value in batch.items():
 

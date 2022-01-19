@@ -8,7 +8,7 @@ from utils import quantize_spectrum, normalize_quantized_spectrum
 
 class STFT(nn.Module):
     
-    def __init__(self, n_fft, hop_len, win_len, window):
+    def __init__(self, n_fft, hop_len, win_len, window, transform_type='logmag'):
         """
         - n_fft: 计算FFT的点数， 越大越细致，但要求更大计算能力，最好是power of 2，
         - hop_length：窗的移动距离
@@ -22,6 +22,7 @@ class STFT(nn.Module):
         self.hop_len = hop_len
         self.win_len = win_len
         self.window = window
+        self.transform_type = transform_type
     
     def forward(self, dt):
 
@@ -37,15 +38,18 @@ class STFT(nn.Module):
                     hop_length= self.hop_len, 
                     window= self.window)).T
 
-                mag = torch.abs(x_stft)
-
+                mag = torch.abs(x_stft).to(device)
                 if key == 'mixed':
-                    dt['phase'] = torch.angle(x_stft)
-                
-                #normalize
-                mag = mag / torch.amax(mag)
+                    dt['phase'] = torch.exp(1j * torch.angle(x_stft)).to(device)
 
-                dt[f'{key}_mag'] = torch.from_numpy(quantize_spectrum(mag)).to(device)
+                
+                if self.transform_type == 'logmag':
+                    dt[f'{key}_mag'] = torch.log1p(mag)
+                elif self.transform_type == 'lps':
+                    dt[f'{key}_mag'] = torch.log10(mag ** 2)
+                else:
+                    mag = mag / torch.amax(mag)
+                    dt[f'{key}_mag'] = quantize_spectrum(mag)
 
             dt['mask'] = torch.div(dt['clean_mag'], dt['mixed_mag'])
 
@@ -54,7 +58,7 @@ class STFT(nn.Module):
 
 class ISTFT(nn.Module):
 
-    def __init__(self, hop_len, win_len, window, device, chunk_size):
+    def __init__(self, hop_len, win_len, window, device, chunk_size, transform_type='logmag'):
         """
         和STFT 参数一样
         """
@@ -64,13 +68,14 @@ class ISTFT(nn.Module):
         self.window = window
         self.chunk_size = chunk_size
         self.device = device
+        self.transform_type = transform_type
         self.flag = False
 
     def forward(self, dt):
         
         # dt['pred_y'] = self.subtraction(pred= dt['pred_y'], noisy_mag= dt['mixed_mag'])#predict noise
         
-        dt['pred_y'] = torch.clamp(dt['pred_y'], min= 0, max= torch.amax(dt['pred_y']))
+        # dt['pred_y'] = torch.clamp(dt['pred_y'], min= 0, max= torch.amax(dt['pred_y']))
                                         
         dt['pred_y'] = self.recovery(mag= dt['pred_y'], phase= dt['phase'])
         
@@ -103,7 +108,18 @@ class ISTFT(nn.Module):
         return dt
     
     def recovery(self, mag, phase):
-        a = normalize_quantized_spectrum(mag).cpu()
+        
+        if self.transform_type == 'logmag':
+            mag = torch.expm1(mag)
+            mag = torch.clamp(mag, min= 0, max= torch.amax(mag))
+            
+        elif self.transform_type == 'lps':
+            mag = torch.sqrt(10 ** mag)
+        else:
+            mag = torch.clamp(mag, min= 0, max= torch.amax(mag))
+            mag = normalize_quantized_spectrum(mag)
+            
+        a = mag.cpu()
         b = torch.cos(phase[self.chunk_size : ]) + 1j * torch.sin(phase[self.chunk_size : ]).cpu()
         # b = torch.exp(1j * phase[self.chunk_size : ])
         return a * b

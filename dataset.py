@@ -6,9 +6,11 @@ from utils import load_audio, snr_mixer
 
 import numpy as np
 
+from tqdm import tqdm
+
 class NoisyData(Dataset):
 
-    def __init__(self, audio_list,  snr, noise_paths, random_seed = None, random_noise= False, ):
+    def __init__(self, audio_list,  snr, noise, random_seed = None, random_noise= False, ):
 
         super(NoisyData, self).__init__()
 
@@ -16,11 +18,7 @@ class NoisyData(Dataset):
 
         self.snr = snr
         
-        if isinstance(noise_paths, str):
-            
-            noise_paths = [noise_paths]
-        
-        self.noise = {i : torch.load(path) for i, path in enumerate(noise_paths)}
+        self.noise = noise
         
         self.random_noise = random_noise
         
@@ -31,7 +29,6 @@ class NoisyData(Dataset):
 
         return len(self.audios)
     
-
     def __getitem__(self, idx):
         
         if self.random_seed:
