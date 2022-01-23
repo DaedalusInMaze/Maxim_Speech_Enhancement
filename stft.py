@@ -179,7 +179,7 @@ class torch_stft(nn.Module):
 
 class torch_istft(nn.Module):
     
-    def __init__(self, n_fft, hop_length, win_length, chunk_size, device, transform_type='logmag'):
+    def __init__(self, n_fft, hop_length, win_length, chunk_size, device, transform_type='logmag', cnn='1d'):
         
         super(torch_istft, self).__init__()
         
@@ -190,6 +190,7 @@ class torch_istft(nn.Module):
         self.device = device
         self.transform_type = transform_type
         self.chunk_size = chunk_size
+        self.cnn = cnn
     
     def forward(self, dt):
         
@@ -202,14 +203,20 @@ class torch_istft(nn.Module):
         else:
             dt['pred_y'] = torch.clamp(dt['pred_y'], min= 0, max= torch.amax(dt['pred_y']))
             dt['pred_y'] = normalize_quantized_spectrum(dt['pred_y'])
+            
+        if self.cnn == '1d':
         
-        
-        
-        dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][self.chunk_size : ])
-        
-        dt['true_y'] = torch.multiply(dt['clean_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
-        
-        dt['mixed_y'] = torch.multiply(dt['mixed_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
+            dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][self.chunk_size : ])
+
+            dt['true_y'] = torch.multiply(dt['clean_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
+
+            dt['mixed_y'] = torch.multiply(dt['mixed_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
+        else:
+            dt['pred_y'] = dt['pred_y'].reshape(-1, dt['pred_y'].shape[2])
+            lens = dt['pred_y'].shape[0]
+            dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][:lens])
+            dt['true_y'] = torch.multiply(dt['clean_mag'][:lens], dt['phase'][:lens])
+            dt['mixed_y'] = torch.multiply(dt['mixed_mag'][:lens], dt['phase'][:lens])
 
         for key in ['mixed_y', 'true_y', 'pred_y']:
 

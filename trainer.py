@@ -164,7 +164,8 @@ class Trainer():
                                   win_length= kwargs['win_len'],
                                   device=self.device,
                                   chunk_size= kwargs['chunk_size'],
-                                  transform_type =kwargs['transform_type'])
+                                  transform_type =kwargs['transform_type'],
+                                  cnn=kwargs['cnn'])
 
                     batch = iStft(batch)
 

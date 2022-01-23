@@ -45,7 +45,7 @@ class NoisyData(Dataset):
             
         else:
             
-            noise_type = 2
+            noise_type = 0 #baby crying
             
             noise_snr = 6
         

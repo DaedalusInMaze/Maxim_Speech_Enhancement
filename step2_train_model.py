@@ -22,7 +22,7 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 ##########  define targets, checkpoint , and data path  ##############
 recovered_path = os.path.join(DATADIR, 'recovered')
-model_path = os.path.join(DATADIR, 'models_2')
+model_path = os.path.join(DATADIR, 'models_3')
 
 if not os.path.exists(model_path):
     os.mkdir(model_path)
@@ -33,15 +33,15 @@ test_list = get_audio_path_list('testaudio', 'flac')
 
 raw_noise_path = os.path.join(DATADIR, 'raw_noise')
 noise_path = []
-noise_path.append(os.path.join(raw_noise_path, 'white_noise.pt'))
-noise_path.append(os.path.join(raw_noise_path, 'siren_noise.pt'))
-noise_path.append(os.path.join(raw_noise_path, 'baby.pt'))
-# noise_path.extend(get_audio_path_list(os.path.join(raw_noise_path, 'nonstationary'), 'pt'))
+# noise_path.append(os.path.join(raw_noise_path, 'white_noise.pt'))
+# noise_path.append(os.path.join(raw_noise_path, 'siren_noise.pt'))
+# noise_path.append(os.path.join(raw_noise_path, 'baby.pt'))
+noise_path.extend(get_audio_path_list(raw_noise_path, 'pt'))
 
 noises = load_noise(noise_path)
 
 ##########  define datasets, and data loader, TODO: optimize how to load noise files  ##############
-noise_dataset = NoisyData(train_list[:50], SNR, noises, random_noise=True)
+noise_dataset = NoisyData(train_list, SNR, noises, random_noise=True)
 valid_dataset = NoisyData(valid_list[:50], SNR, noises, random_seed=True)
 test_dataset = NoisyData(test_list, SNR, noises, random_seed=True)
 
@@ -90,6 +90,7 @@ trainer.train(epoch= epoch,
               recovered_path = recovered_path,
               fs = SAMPLING_RATE,
               transform_type = transform_type,
-              model_path = model_path)
+              model_path = model_path,
+              cnn = cnn)
 
 print('training finished')

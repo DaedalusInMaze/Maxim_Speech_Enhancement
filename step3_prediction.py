@@ -11,7 +11,7 @@ from stft import torch_istft
 
 from config import *
 
-from model import SePipline, load_model
+from model_pipeline import SePipline, load_model
 
 from utils import get_audio_path_list, load_audio, save_wav, snr_mixer, generate_test_files
 
@@ -19,8 +19,8 @@ import os
 
 import random
   
-model_path = os.path.join(DATADIR, 'models_2')
-pretrain_model_name = '34_epoch.pth.tar'
+model_path = os.path.join(DATADIR, 'models_3')
+pretrain_model_name = '10_epoch.pth.tar'
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
@@ -45,9 +45,9 @@ test_list = get_audio_path_list(os.path.join(DATADIR, 'valid'), 'flac')
 
 raw_noise_path = os.path.join(DATADIR, 'raw_noise')
 noise_path = []
-# noise_path.append(os.path.join(raw_noise_path, 'white_noise.pt'))
+noise_path.append(os.path.join(raw_noise_path, 'white_noise.pt'))
 noise_path.append(os.path.join(raw_noise_path, 'siren_noise.pt'))
-# noise_path.append(os.path.join(raw_noise_path, 'baby.pt'))
+noise_path.append(os.path.join(raw_noise_path, 'baby.pt'))
 # noise_path.append('testnoise/nonstationary/Crowd_noise_10mins.pt')
 ########### 
 
@@ -70,7 +70,8 @@ iStft = torch_istft(n_fft =K,
                   win_length= N_d,
                   device=DEVICE,
                   chunk_size= CHUNK_SIZE,
-                  transform_type =transform_type)
+                  transform_type =transform_type,
+                  cnn=cnn)
 
 dt = iStft(dt)
 

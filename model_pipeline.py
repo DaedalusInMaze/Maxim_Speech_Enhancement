@@ -2,11 +2,11 @@ import torch.nn as nn
 
 import torch
 
-from stft import STFT, torch_stft
+from stft import *
 
-from sliding_window import ChunkData
+from sliding_window import ChunkDatav2
 
-from senet import SENetv2
+from senet import SENetv3
 
 
 
@@ -16,14 +16,17 @@ class SePipline(nn.Module):
         super(SePipline, self).__init__()
         
         if stft_type == 'torch':
-             _stft = torch_stft(n_fft=n_fft, hop_length=hop_len, win_length= win_len, device = device, transform_type= transform_type)
+            _stft = torch_stft(n_fft=n_fft, hop_length=hop_len, win_length= win_len, device = device, transform_type= transform_type)
+            _istft = torch_istft(n_fft =n_fft, hop_length=hop_len, win_length= win_len, device=device, chunk_size= chunk_size, transform_type =transform_type)
+            
         elif stft_type == 'librosa':
-             _stft = STFT(n_fft=n_fft, hop_len=hop_len, win_len= win_len, window=window, transform_type= transform_type)
+            _stft = STFT(n_fft=n_fft, hop_len=hop_len, win_len= win_len, window=window, transform_type= transform_type)
+            _istft = ISTFT(hop_len=hop_len, win_len = win_len, window= window, device= device, chunk_size= chunk_size, transform_type= transform_type)
             
         self.model = nn.Sequential(
             _stft,
-            ChunkData(chunk_size= chunk_size),
-            SENetv2()
+            ChunkDatav2(chunk_size= chunk_size),
+            SENetv3()
         ).to(device)
 
     def forward(self, dt):

@@ -29,3 +29,35 @@ class ChunkData(nn.Module):
             dt['x'] = dt['x'].permute(0, 2, 1)
 
         return dt
+
+    
+
+class ChunkDatav2(nn.Module):
+
+    def __init__(self, chunk_size):
+        super(ChunkDatav2, self).__init__()
+
+        self.chunk_size = chunk_size
+    
+    def forward(self, dt):
+        with torch.no_grad():
+
+            time, freq = dt['mixed_mag'].shape
+
+            device = dt['mixed_mag'].device
+
+            chunks = time // self.chunk_size
+
+            dt['x'] = torch.zeros((chunks, self.chunk_size, freq), device= device)
+
+            dt['y'] = torch.zeros((chunks, self.chunk_size, freq), device= device)
+
+            for i in range(chunks):
+                
+                dt['x'][i] = dt['mixed_mag'][i * self.chunk_size : (i + 1) * self.chunk_size]
+
+                dt['y'][i] = dt['clean_mag'][i * self.chunk_size : (i + 1) * self.chunk_size]
+            
+            dt['x'] = dt['x'].permute(0, 2, 1)
+
+        return dt
