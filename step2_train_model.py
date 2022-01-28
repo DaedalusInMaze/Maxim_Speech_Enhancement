@@ -22,7 +22,7 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 ##########  define targets, checkpoint , and data path  ##############
 recovered_path = os.path.join(DATADIR, 'recovered')
-model_path = os.path.join(DATADIR, 'models_3')
+model_path = os.path.join(DATADIR, 'models_mask')
 
 if not os.path.exists(model_path):
     os.mkdir(model_path)
@@ -40,7 +40,7 @@ noise_path.extend(get_audio_path_list(raw_noise_path, 'pt'))
 
 noises = load_noise(noise_path)
 
-##########  define datasets, and data loader, TODO: optimize how to load noise files  ##############
+##########  define datasets, and data loader  ##############
 noise_dataset = NoisyData(train_list, SNR, noises, random_noise=True)
 valid_dataset = NoisyData(valid_list[:50], SNR, noises, random_seed=True)
 test_dataset = NoisyData(test_list, SNR, noises, random_seed=True)
@@ -49,7 +49,7 @@ train_dataloader = DataLoader(noise_dataset, batch_size=BATCH_SIZE, shuffle=True
 valid_dataloader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False)
 test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-##########  Pipeline, TODO: define librosa and torch stft selection ##############
+##########  Pipeline ##############
 SE = SePipline(
     n_fft=K, 
     hop_len=N_s, 
@@ -58,7 +58,8 @@ SE = SePipline(
     device=DEVICE,
     chunk_size=CHUNK_SIZE,
     transform_type = transform_type,
-    stft_type = stft_type)
+    stft_type = stft_type,
+    target = target)
 
 optimizer = torch.optim.Adam(SE.parameters(), lr=lr)
 criterion = nn.MSELoss()
@@ -91,6 +92,7 @@ trainer.train(epoch= epoch,
               fs = SAMPLING_RATE,
               transform_type = transform_type,
               model_path = model_path,
-              cnn = cnn)
+              cnn = cnn,
+              target= target)
 
 print('training finished')

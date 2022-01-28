@@ -11,13 +11,13 @@ from senet import SENetv3
 
 
 class SePipline(nn.Module):
-    def __init__(self, n_fft, hop_len, win_len, window, device, chunk_size, transform_type='logmag', stft_type='torch'):
+    def __init__(self, n_fft, hop_len, win_len, window, device, chunk_size, transform_type='logmag', stft_type='torch', **kwargs):
 
         super(SePipline, self).__init__()
         
         if stft_type == 'torch':
             _stft = torch_stft(n_fft=n_fft, hop_length=hop_len, win_length= win_len, device = device, transform_type= transform_type)
-            _istft = torch_istft(n_fft =n_fft, hop_length=hop_len, win_length= win_len, device=device, chunk_size= chunk_size, transform_type =transform_type)
+            _istft = torch_istft(n_fft =n_fft, hop_length=hop_len, win_length= win_len, device=device, chunk_size= chunk_size, transform_type =transform_type, target= kwargs['target'])
             
         elif stft_type == 'librosa':
             _stft = STFT(n_fft=n_fft, hop_len=hop_len, win_len= win_len, window=window, transform_type= transform_type)
@@ -25,7 +25,7 @@ class SePipline(nn.Module):
             
         self.model = nn.Sequential(
             _stft,
-            ChunkDatav2(chunk_size= chunk_size),
+            ChunkDatav2(chunk_size= chunk_size, target= kwargs['target']),
             SENetv3()
         ).to(device)
 

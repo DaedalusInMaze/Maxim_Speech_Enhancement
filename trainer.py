@@ -165,7 +165,8 @@ class Trainer():
                                   device=self.device,
                                   chunk_size= kwargs['chunk_size'],
                                   transform_type =kwargs['transform_type'],
-                                  cnn=kwargs['cnn'])
+                                  cnn=kwargs['cnn'],
+                                  target= kwargs['target'])
 
                     batch = iStft(batch)
 

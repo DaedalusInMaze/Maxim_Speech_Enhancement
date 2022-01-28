@@ -20,7 +20,7 @@ import os
 import random
   
 model_path = os.path.join(DATADIR, 'models_3')
-pretrain_model_name = '10_epoch.pth.tar'
+pretrain_model_name = '15_epoch.pth.tar'
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
@@ -45,17 +45,21 @@ test_list = get_audio_path_list(os.path.join(DATADIR, 'valid'), 'flac')
 
 raw_noise_path = os.path.join(DATADIR, 'raw_noise')
 noise_path = []
+# noise_path.extend(get_audio_path_list(raw_noise_path, 'pt')
 noise_path.append(os.path.join(raw_noise_path, 'white_noise.pt'))
 noise_path.append(os.path.join(raw_noise_path, 'siren_noise.pt'))
 noise_path.append(os.path.join(raw_noise_path, 'baby.pt'))
-# noise_path.append('testnoise/nonstationary/Crowd_noise_10mins.pt')
+noise_path.append(os.path.join(raw_noise_path, 'engine_sound.pt'))
+noise_path.append(os.path.join(raw_noise_path, 'dog_barking.pt'))
+noise_path.append(os.path.join(raw_noise_path, 'traffic_sounds.pt'))
+# noise_path.append(os.path.join('testnoise', 'helicopter.pt'))
 ########### 
 
 noise_path = np.random.choice(noise_path)
 
 test_path = np.random.choice(test_list)
 
-dt = generate_test_files(test_path, noise_path, snr = 0)
+dt = generate_test_files(test_path, noise_path, snr = -10)
 
 for key, value in dt.items():
 
