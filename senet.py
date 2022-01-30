@@ -1,57 +1,6 @@
 import torch
 import torch.nn as nn
-
-class CNN2DBlock(nn.Module):
-    def __init__(self, channel_in, channel_out, kernel_size=(5, 7), dilation=1, stride=(1, 2), padding=0):
-
-        super(CNN2DBlock, self).__init__()
-
-        self.f = nn.Sequential(
-            nn.Conv2d(
-                channel_in, 
-                channel_out, 
-                kernel_size=kernel_size,
-                stride=stride, 
-                padding=padding, 
-                dilation=dilation),
-
-            nn.BatchNorm2d(channel_out),
-
-            nn.LeakyReLU(negative_slope=0.1)
-        )
-
-    def forward(self, x):
-
-        return self.f(x)
-
-class TCNN2DBlock(nn.Module):
-    def __init__(self, channel_in, channel_out, kernel_size=(5, 7), dilation=1, stride=(1, 2), padding=0, dropout=False, output_padding=1):
-
-        super(TCNN2DBlock, self).__init__()
-
-        self.f = nn.Sequential(
-            nn.ConvTranspose2d(
-                channel_in, 
-                channel_out, 
-                kernel_size=kernel_size,
-                stride=stride, 
-                padding=padding, 
-                dilation=dilation,
-                output_padding=output_padding),
-
-            nn.BatchNorm2d(channel_out),
-
-            nn.LeakyReLU(negative_slope=0.1)
-        )
-
-        self.d = dropout
-        self.dropout = nn.Dropout(0.5)
-    def forward(self, x):
-        x = self.f(x)
-        if self.d:
-            x = self.dropout(x)
-        return x
-
+from modules import *
 
 
 class SENetv0(nn.Module):
@@ -209,6 +158,9 @@ class SENetv2(nn.Module):
     
 
 class SENetv3(nn.Module):
+    """
+    chunk_size=16
+    """
     def __init__(self, freq_bin = 257, hidden_dim = 768, num_layer = 7, kernel_size = 3):
         super(SENetv3, self).__init__()
 
@@ -252,3 +204,53 @@ class SENetv3(nn.Module):
         dt['pred_y'] = torch.squeeze(x).permute(0, 2, 1)
         return dt
 
+
+class SENetv4(nn.Module):
+    def __init__(self):
+        super(SENetv4, self).__init__()
+        # set_device(device=85, simulate=True, round_avg=True)
+        e1 = MaxPoolConv2dBNReLU(in_channels=1, out_channels= 64, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+
+        e2 = MaxPoolConv2dBNReLU(in_channels=64, out_channels= 128, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+
+        e3 = MaxPoolConv2dBNReLU(in_channels=128, out_channels= 256, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+
+        e4 = MaxPoolConv2dBNReLU(in_channels=256, out_channels= 256, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+
+
+        d4 = nn.Sequential(
+            ConvTranspose2d(in_channels=512, out_channels= 256, kernel_size=3, stride=2, padding=1, bias=True, batchnorm='Affine'),
+            Conv2dBNReLU(in_channels=256, out_channels= 256, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+        )
+
+        d3 = nn.Sequential(
+            ConvTranspose2d(in_channels=512, out_channels= 256, kernel_size=3, stride=2, padding=1, bias=True, batchnorm='Affine'),
+            Conv2dBNReLU(in_channels=256, out_channels= 128, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+        )
+
+        d2 = nn.Sequential(
+            ConvTranspose2d(in_channels=256, out_channels= 128, kernel_size=3, stride=2, padding=1, bias=True, batchnorm='Affine'),
+            Conv2dBNReLU(in_channels=128, out_channels= 64, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+        )
+
+        d1 = nn.Sequential(
+            ConvTranspose2d(in_channels=128, out_channels= 64, kernel_size=3, stride=2, padding=1, bias=True, batchnorm='Affine'),
+            Conv2dBNReLU(in_channels=64, out_channels= 1, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+        )
+        self.encoder = nn.ModuleList([e1, e2, e3, e4])
+
+        self.decoder = nn.ModuleList([d4, d3, d2, d1])
+    
+    def forward(self, dt):
+        x = dt['x'].reshape(-1, 1, dt['x'].shape[1], dt['x'].shape[2])
+        skip_outputs = []
+        for layer in self.encoder:
+            x = layer(x)
+            skip_outputs.append(x)
+        for layer in self.decoder:
+            skip_output = skip_outputs.pop()
+            x = torch.cat([x, skip_output], dim = 1)
+            x = layer(x)
+        
+        dt['pred_y'] = torch.squeeze(x).permute(0, 2, 1)
+        return dt

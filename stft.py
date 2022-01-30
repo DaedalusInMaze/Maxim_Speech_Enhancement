@@ -2,9 +2,71 @@ import torch
 
 import torch.nn as nn
 
+import torch.nn.functional as F
+
 import librosa
 
 from utils import quantize_spectrum, normalize_quantized_spectrum
+
+
+def irm(clean_mag, noise_mag):
+    """
+    ideal ratio mask
+
+    to recover: predicted mask * noisy mag = clean mag
+    """
+    eps= 1e-8
+    return (clean_mag ** 2 / (clean_mag ** 2 + noise_mag ** 2 + eps)) ** 0.5
+
+
+def psm(clean_fft, mixed_fft):
+    """
+    phase sensitive mask
+    """
+    return torch.abs(clean_fft) / torch.abs(mixed_fft) * torch.cos(torch.angle(mixed_fft) + torch.angle(clean_fft))
+
+
+def logmag_transform(magnitude, recover = False):
+    
+    if recover:
+        
+        magnitude = torch.expm1(magnitude)
+            
+        magnitude = torch.clamp(magnitude, min= 0, max= torch.amax(magnitude))
+        
+        return magnitude
+    
+    return torch.log1p(magnitude)
+
+
+def lps_transform(magnitude, recover = False):
+    """
+    log power spectrum
+    """
+    
+    if recover:
+        
+        magnitude = torch.sqrt(10 ** magnitude)
+        
+        return magnitude
+    
+    return torch.log10(magnitude ** 2)
+
+
+
+def quantize_transform(magnitude, recover = False):
+    
+    if recover:
+        
+        magnitude = torch.clamp(magnitude, min= 0, max= torch.amax(magnitude))
+        
+        magnitude = normalize_quantized_spectrum(magnitude)
+        
+        return magnitude
+    
+    magnitude = magnitude / torch.amax(magnitude)
+    
+    return quantize_spectrum(magnitude)
 
 class STFT(nn.Module):
     
@@ -44,14 +106,13 @@ class STFT(nn.Module):
 
                 
                 if self.transform_type == 'logmag':
-                    dt[f'{key}_mag'] = torch.log1p(mag)
+                    dt[f'{key}_mag'] = logmag_transform(mag)
                 elif self.transform_type == 'lps':
-                    dt[f'{key}_mag'] = torch.log10(mag ** 2)
+                    dt[f'{key}_mag'] = lps_transform(mag)
                 else:
-                    mag = mag / torch.amax(mag)
-                    dt[f'{key}_mag'] = quantize_spectrum(mag)
+                    dt[f'{key}_mag'] = quantize_transform(mag)
 
-            dt['mask'] = torch.div(dt['clean_mag'], dt['mixed_mag'])
+            dt['mask'] = torch.div(dt['clean_mag'], dt['mixed_mag'])            
 
         return dt
 
@@ -110,18 +171,15 @@ class ISTFT(nn.Module):
     def recovery(self, mag, phase):
         
         if self.transform_type == 'logmag':
-            mag = torch.expm1(mag)
-            mag = torch.clamp(mag, min= 0, max= torch.amax(mag))
+            mag = logmag_transform(mag, recover=True)
             
         elif self.transform_type == 'lps':
-            mag = torch.sqrt(10 ** mag)
+            mag = lps_transform(mag, recover=True)
         else:
-            mag = torch.clamp(mag, min= 0, max= torch.amax(mag))
-            mag = normalize_quantized_spectrum(mag)
-            
+            mag = quantize_transform(mag, recover=True)
+    
         a = mag.cpu()
         b = torch.cos(phase[self.chunk_size : ]) + 1j * torch.sin(phase[self.chunk_size : ]).cpu()
-        # b = torch.exp(1j * phase[self.chunk_size : ])
         return a * b
     
     def subtraction(self, pred, noisy_mag):
@@ -129,8 +187,6 @@ class ISTFT(nn.Module):
         res = torch.clamp(res, min= 0, max= torch.amax(res))
         return res
         
-        
-
 
 
 
@@ -160,26 +216,25 @@ class torch_stft(nn.Module):
                              return_complex=True).T
             fft = torch.squeeze(fft)
             mag = torch.abs(fft)
+            
             if key == 'mixed':
                 dt['phase'] = torch.exp(1j * torch.angle(fft))
 
             if self.transform_type == 'logmag':
-                dt[f'{key}_mag'] = torch.log1p(mag)
+                dt[f'{key}_mag'] = logmag_transform(mag)
             elif self.transform_type == 'lps':
-                dt[f'{key}_mag'] = torch.log10(mag ** 2)
+                dt[f'{key}_mag'] = lps_transform(mag)
             else:
-                mag = mag / torch.amax(mag)
-                dt[f'{key}_mag'] = quantize_spectrum(mag)
+                dt[f'{key}_mag'] = quantize_transform(mag)
 
-        dt['mask'] = torch.div(dt['clean_mag'], dt['mixed_mag'])
+        dt['mask'] = irm(dt['clean_mag'], dt['noise_mag'])
             
-        return dt           
-    
+        return dt
     
 
 class torch_istft(nn.Module):
     
-    def __init__(self, n_fft, hop_length, win_length, chunk_size, device, transform_type='logmag', cnn='1d'):
+    def __init__(self, n_fft, hop_length, win_length, chunk_size, device, target, transform_type='logmag', cnn='1d'):
         
         super(torch_istft, self).__init__()
         
@@ -191,32 +246,83 @@ class torch_istft(nn.Module):
         self.transform_type = transform_type
         self.chunk_size = chunk_size
         self.cnn = cnn
+        self.target = target
+    
+    def mask_recover(self, dt):
+        
+        batch, time, freq = dt['pred_y'].shape
+        
+        if freq == 256:
+            
+            dt['pred_y'] = F.pad(dt['pred_y'], (0, 1, 0, 0))
+            
+            freq += 1
+        
+        dt['pred_y'] = torch.reshape(dt['pred_y'], (-1, freq))
+        
+        lens = dt['pred_y'].shape[0]
+        
+        dt['pred_y'] = dt['pred_y'] * dt['mixed_mag'][:lens]
+        
+        dt['pred_y'] = torch.reshape(dt['pred_y'], (batch, time, freq))
+        
+        return dt
+    
+    def cnn1d_recover(self, dt):
+        
+        dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][self.chunk_size : ])
+
+        dt['true_y'] = torch.multiply(dt['clean_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
+
+        dt['mixed_y'] = torch.multiply(dt['mixed_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
+        
+        return dt
+    
+    def cnn2d_recover(self, dt):
+        
+        dt['pred_y'] = dt['pred_y'].reshape(-1, dt['pred_y'].shape[2])
+        
+        lens = dt['pred_y'].shape[0]
+        
+        dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][:lens])
+        
+        dt['true_y'] = torch.multiply(dt['clean_mag'][:lens], dt['phase'][:lens])
+        
+        dt['mixed_y'] = torch.multiply(dt['mixed_mag'][:lens], dt['phase'][:lens])
+        
+        return dt
     
     def forward(self, dt):
         
-        if self.transform_type == 'logmag':
-            dt['pred_y'] = torch.expm1(dt['pred_y'])
-            dt['pred_y'] = torch.clamp(dt['pred_y'], min= 0, max= torch.amax(dt['pred_y']))
+        if self.target == 'mask':  
             
-        elif self.transform_type == 'lps':
-            dt['pred_y'] = torch.sqrt(10 ** dt['pred_y'])
-        else:
-            dt['pred_y'] = torch.clamp(dt['pred_y'], min= 0, max= torch.amax(dt['pred_y']))
-            dt['pred_y'] = normalize_quantized_spectrum(dt['pred_y'])
-            
-        if self.cnn == '1d':
+            dt = self.mask_recover(dt)
         
-            dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][self.chunk_size : ])
+        if self.transform_type == 'logmag':
+            
+            for key in ['mixed_mag', 'clean_mag', 'pred_y']:
+            
+                dt[key] = logmag_transform(dt[key], recover=True)
 
-            dt['true_y'] = torch.multiply(dt['clean_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
-
-            dt['mixed_y'] = torch.multiply(dt['mixed_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
+        elif self.transform_type == 'lps':
+            
+            for key in ['mixed_mag', 'clean_mag', 'pred_y']:
+            
+                dt[key] = lps_transform(dt[key], recover=True)
+            
         else:
-            dt['pred_y'] = dt['pred_y'].reshape(-1, dt['pred_y'].shape[2])
-            lens = dt['pred_y'].shape[0]
-            dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][:lens])
-            dt['true_y'] = torch.multiply(dt['clean_mag'][:lens], dt['phase'][:lens])
-            dt['mixed_y'] = torch.multiply(dt['mixed_mag'][:lens], dt['phase'][:lens])
+            
+            for key in ['mixed_mag', 'clean_mag', 'pred_y']:
+                
+                dt[key] = quantize_transform(dt[key], recover=True)
+
+        if self.cnn == '1d':
+
+            dt = self.cnn1d_recover(dt)
+            
+        else:
+            
+            dt = self.cnn2d_recover(dt)
 
         for key in ['mixed_y', 'true_y', 'pred_y']:
 

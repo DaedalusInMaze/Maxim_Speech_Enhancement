@@ -4,9 +4,9 @@ import torch
 
 from stft import *
 
-from sliding_window import ChunkDatav2
+from sliding_window import ChunkDatav3
 
-from senet import SENetv3
+from senet import SENetv4
 
 
 
@@ -25,8 +25,8 @@ class SePipline(nn.Module):
             
         self.model = nn.Sequential(
             _stft,
-            ChunkDatav2(chunk_size= chunk_size, target= kwargs['target']),
-            SENetv3()
+            ChunkDatav3(chunk_size= chunk_size, target= kwargs['target']),
+            SENetv4()
         ).to(device)
 
     def forward(self, dt):
