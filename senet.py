@@ -43,29 +43,7 @@ class SENetv0(nn.Module):
         dt['pred_y'] = torch.squeeze(x)
         return dt
 
-class CNNBlock(nn.Module):
 
-    def __init__(self, channel_in, channel_out, kernel_size=3, dilation=1, stride=1, padding=0):
-
-        super(CNNBlock, self).__init__()
-
-        self.f = nn.Sequential(
-            nn.Conv1d(
-                channel_in, 
-                channel_out, 
-                kernel_size=kernel_size,
-                stride=stride, 
-                padding=padding, 
-                dilation=dilation),
-
-            nn.BatchNorm1d(channel_out),
-
-            nn.LeakyReLU(negative_slope=0.1)
-        )
-
-    def forward(self, x):
-
-        return self.f(x)
 
 class SENetv1(nn.Module):
     """
@@ -104,7 +82,7 @@ class SENetv1(nn.Module):
         x = dt['x']
         for layer in self.encoder:
             x = layer(x)
-        dt['pred_y'] = torch.squeeze(x)
+        dt['pred_mask'] = torch.squeeze(x)
         return dt
 
 
@@ -152,7 +130,7 @@ class SENetv2(nn.Module):
         x = dt['x']
         for layer in self.encoder:
             x = layer(x)
-        dt['pred_y'] = torch.squeeze(x)
+        dt['pred_mask'] = torch.squeeze(x)
         return dt
 
     
@@ -201,56 +179,287 @@ class SENetv3(nn.Module):
                 skip_output = skip_outputs.pop()
                 x = torch.cat([x, skip_output], dim = 1)
             x = layer(x)
-        dt['pred_y'] = torch.squeeze(x).permute(0, 2, 1)
+        dt['pred_mask'] = torch.squeeze(x).permute(0, 2, 1)
         return dt
 
 
 class SENetv4(nn.Module):
-    def __init__(self):
+    def __init__(self, channel):
         super(SENetv4, self).__init__()
-        # set_device(device=85, simulate=True, round_avg=True)
-        e1 = MaxPoolConv2dBNReLU(in_channels=1, out_channels= 64, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
 
-        e2 = MaxPoolConv2dBNReLU(in_channels=64, out_channels= 128, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+        self.encoder = nn.ModuleList(
+            [nn.Conv2d(in_channels=1, out_channels=channel, kernel_size=3, stride=1,
+            padding=1, dilation=1),
 
-        e3 = MaxPoolConv2dBNReLU(in_channels=128, out_channels= 256, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+            nn.ReLU(True),
 
-        e4 = MaxPoolConv2dBNReLU(in_channels=256, out_channels= 256, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+            CNNBlockv2(channel * 1, channel * 2),
 
+            CNNBlockv2(channel * 2, channel * 4),
 
-        d4 = nn.Sequential(
-            ConvTranspose2d(in_channels=512, out_channels= 256, kernel_size=3, stride=2, padding=1, bias=True, batchnorm='Affine'),
-            Conv2dBNReLU(in_channels=256, out_channels= 256, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
+            CNNBlockv2(channel * 4, channel * 2),
+
+            CNNBlockv2(channel * 2, channel * 1)]
         )
-
-        d3 = nn.Sequential(
-            ConvTranspose2d(in_channels=512, out_channels= 256, kernel_size=3, stride=2, padding=1, bias=True, batchnorm='Affine'),
-            Conv2dBNReLU(in_channels=256, out_channels= 128, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
-        )
-
-        d2 = nn.Sequential(
-            ConvTranspose2d(in_channels=256, out_channels= 128, kernel_size=3, stride=2, padding=1, bias=True, batchnorm='Affine'),
-            Conv2dBNReLU(in_channels=128, out_channels= 64, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
-        )
-
-        d1 = nn.Sequential(
-            ConvTranspose2d(in_channels=128, out_channels= 64, kernel_size=3, stride=2, padding=1, bias=True, batchnorm='Affine'),
-            Conv2dBNReLU(in_channels=64, out_channels= 1, kernel_size=3, stride=1, padding=1, bias=True, batchnorm='Affine')
-        )
-        self.encoder = nn.ModuleList([e1, e2, e3, e4])
-
-        self.decoder = nn.ModuleList([d4, d3, d2, d1])
-    
-    def forward(self, dt):
-        x = dt['x'].reshape(-1, 1, dt['x'].shape[1], dt['x'].shape[2])
-        skip_outputs = []
-        for layer in self.encoder:
-            x = layer(x)
-            skip_outputs.append(x)
-        for layer in self.decoder:
-            skip_output = skip_outputs.pop()
-            x = torch.cat([x, skip_output], dim = 1)
-            x = layer(x)
         
-        dt['pred_y'] = torch.squeeze(x).permute(0, 2, 1)
+        self.decoder = nn.ModuleList(
+            [CNNBlockv2(channel * 1, channel * 2),
+
+            CNNBlockv2(channel * 2, channel * 4),
+
+            CNNBlockv2(channel * 4, channel * 2),
+
+            CNNBlockv2(channel * 2, channel * 1),
+
+            nn.Dropout2d(0.2, True),
+
+            CNNBlockv2(channel * 1, 1)]
+        )
+
+    def forward(self, dt):
+        
+        x = dt['x'].reshape(-1, 1, dt['x'].shape[1], dt['x'].shape[2])
+
+        skip = []
+
+        for layer in self.encoder:
+
+            x = layer(x)
+            skip.append(x)
+
+        for layer in self.decoder:
+
+            s = skip.pop()
+            x = layer(x + s)
+        
+        x = x[:,:,:257,:]
+        dt['pred_mask'] = torch.squeeze(x).permute(0, 2, 1)
+
+        return dt
+class SENetv5(nn.Module):
+    def __init__(self, channel):
+        super(SENetv5, self).__init__()
+
+        self.encoder = nn.ModuleList(
+            [CNNBlockv2(1, channel * 1),
+
+            CNNBlockv2(channel * 1, channel * 2),
+
+            CNNBlockv2(channel * 2, channel * 4),
+
+            CNNBlockv2(channel * 4, channel * 8), 
+            
+            CNNBlockv2(channel * 8, channel * 16), 
+            ]
+        )
+        
+        self.decoder = nn.ModuleList(
+            [CNNBlockv2(channel * 16, channel * 8),
+
+            CNNBlockv2(channel * 8, channel * 4),
+
+            CNNBlockv2(channel * 4, channel * 2),
+
+            CNNBlockv2(channel * 2, channel * 1),
+
+            CNNBlockv2(channel * 1, 1)]
+        )
+
+    def forward(self, dt):
+        
+        x = dt['x'].reshape(-1, 1, dt['x'].shape[1], dt['x'].shape[2])
+
+        skip = []
+
+        for layer in self.encoder:
+
+            x = layer(x)
+            skip.append(x)
+
+        for layer in self.decoder:
+
+            s = skip.pop()
+            x = layer(x + s)
+        
+        dt['pred_mask'] = torch.squeeze(x).permute(0, 2, 1)
+    
+        return dt
+
+class SENetv6(nn.Module):
+    def __init__(self, channel):
+        super(SENetv6, self).__init__()
+
+        self.encoder = nn.ModuleList(
+            [CNNBlockv2(1, channel, kernel_size=5),
+
+            CNNBlockv2(channel, channel, kernel_size=5),
+            ]
+        )
+        
+        self.decoder = nn.ModuleList(
+            [CNNBlockv2(channel, channel, kernel_size=5),
+
+            CNNBlockv2(channel, 1, kernel_size=5)]
+        )
+
+    def forward(self, dt):
+        
+        x = dt['x'].reshape(-1, 1, dt['x'].shape[1], dt['x'].shape[2])
+        
+        skip = []
+        for layer in self.encoder:
+
+            x = layer(x)
+            skip.append(x)
+
+        for layer in self.decoder:
+            
+            s = skip.pop()
+            x = layer(x + s)
+
+        dt['pred_mask'] = torch.squeeze(x).permute(0, 2, 1)
+        return dt
+
+class SENetv7(nn.Module):
+    """
+    chunk_size=16
+    """
+    def __init__(self, ):
+        super(SENetv7, self).__init__()
+
+        e1 = CNN2DBlockv2(1, 64, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e2 = CNN2DBlockv2(64, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e3 = CNN2DBlockv2(128, 256, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e4 = CNN2DBlockv2(256, 256, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e5 = CNN2DBlockv2(256, 256, kernel_size= 3, stride= 1, padding= 1, maxpool=False)
+
+        
+        self.encoders = nn.ModuleList([e1, e2, e3, e4, e5])
+
+        d5 = CNN2DBlockv2(256, 256, kernel_size= 3, stride= 1, padding= 1, maxpool=False)
+        d4 = TCNN2DBlockv2(512, 256, kernel_size= 3, stride= 2, padding = 1, output_padding=1)
+        d3 = TCNN2DBlockv2(512, 128, kernel_size= 3, stride= 2, padding = 1, output_padding=1)
+        d2 = TCNN2DBlockv2(256, 64, kernel_size= 3, stride= 2, padding = 1, output_padding=1)
+        d1 = TCNN2DBlockv2(128, 1, kernel_size= 3, stride= 2, padding = 1, output_padding=1)  
+        self.decoders = nn.ModuleList([d5, d4, d3, d2, d1])
+
+    def forward(self, dt):
+        
+        x = dt['x'].reshape(-1, 1, dt['x'].shape[1], dt['x'].shape[2])
+        e1 = self.encoders[0](x)
+
+        e2 = self.encoders[1](e1)
+
+        e3 = self.encoders[2](e2)
+
+        e4 = self.encoders[3](e3)
+
+        e5 = self.encoders[4](e4)
+
+        d5 = self.decoders[0](e5)
+
+        d4 = self.decoders[1](torch.cat([d5, e4], dim=1))
+
+        d3 = self.decoders[2](torch.cat([d4, e3], dim=1))
+
+        d2 = self.decoders[3](torch.cat([d3, e2], dim=1))
+
+        d1 = self.decoders[4](torch.cat([d2, e1], dim=1))
+        dt['pred_mask'] = torch.squeeze(d1).permute(0, 2, 1)
+        return dt
+
+    
+class SENetv8(nn.Module):
+    """
+    chunk_size=16
+    """
+    def __init__(self, ):
+        super(SENetv8, self).__init__()
+
+        e1 = CNN2DBlockv2(1, 64, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e2 = CNN2DBlockv2(64, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e3 = CNN2DBlockv2(128, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e4 = CNN2DBlockv2(128, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e5 = CNN2DBlockv2(128, 256, kernel_size= 3, stride= 1, padding= 1, maxpool=False)
+
+        
+        self.encoders = nn.ModuleList([e1, e2, e3, e4, e5])
+
+        d5 = CNN2DBlockv2(256, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=False)
+        d4 = TCNN2DBlockv2(256, 128, kernel_size= 3, stride= 2, padding = 1, output_padding=1)
+        d3 = TCNN2DBlockv2(256, 128, kernel_size= 3, stride= 2, padding = 1, output_padding=1)
+        d2 = TCNN2DBlockv2(256, 64, kernel_size= 3, stride= 2, padding = 1, output_padding=1)
+        d1 = TCNN2DBlockv2(128, 1, kernel_size= 3, stride= 2, padding = 1, output_padding=1)  
+        self.decoders = nn.ModuleList([d5, d4, d3, d2, d1])
+
+    def forward(self, dt):
+        
+        x = dt['x'].reshape(-1, 1, dt['x'].shape[1], dt['x'].shape[2])
+        e1 = self.encoders[0](x)
+
+        e2 = self.encoders[1](e1)
+
+        e3 = self.encoders[2](e2)
+
+        e4 = self.encoders[3](e3)
+
+        e5 = self.encoders[4](e4)
+
+        d5 = self.decoders[0](e5)
+
+        d4 = self.decoders[1](torch.cat([d5, e4], dim=1))
+
+        d3 = self.decoders[2](torch.cat([d4, e3], dim=1))
+
+        d2 = self.decoders[3](torch.cat([d3, e2], dim=1))
+
+        d1 = self.decoders[4](torch.cat([d2, e1], dim=1))
+        dt['pred_mask'] = torch.squeeze(d1).permute(0, 2, 1)
+        return dt
+    
+
+class SENetv10(nn.Module):
+    def __init__(self, ):
+        super(SENetv10, self).__init__()
+
+        e1 = CNN2DBlockv2(1, 64, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e2 = CNN2DBlockv2(64, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e3 = CNN2DBlockv2(128, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e4 = CNN2DBlockv2(128, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=True)
+        e5 = CNN2DBlockv2(128, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=False)
+
+        
+        self.encoders = nn.ModuleList([e1, e2, e3, e4, e5])
+
+        d5 = CNN2DBlockv2(128, 128, kernel_size= 3, stride= 1, padding= 1, maxpool=False)
+        d4 = TCNN2DBlockv2(256, 128, kernel_size= 3, stride= 2, padding = 1, output_padding=1)
+        d3 = TCNN2DBlockv2(256, 128, kernel_size= 3, stride= 2, padding = 1, output_padding=1)
+        d2 = TCNN2DBlockv2(256, 64, kernel_size= 3, stride= 2, padding = 1, output_padding=1)
+        d1 = TCNN2DBlockv2(128, 1, kernel_size= 3, stride= 2, padding = 1, output_padding=1)  
+        self.decoders = nn.ModuleList([d5, d4, d3, d2, d1])
+
+    def forward(self, dt):
+        
+        x = dt['x'].reshape(-1, 1, dt['x'].shape[1], dt['x'].shape[2])
+        e1 = self.encoders[0](x)
+
+        e2 = self.encoders[1](e1)
+
+        e3 = self.encoders[2](e2)
+
+        e4 = self.encoders[3](e3)
+
+        e5 = self.encoders[4](e4)
+
+        d5 = self.decoders[0](e5)
+
+        d4 = self.decoders[1](torch.cat([d5, e4], dim=1))
+
+        d3 = self.decoders[2](torch.cat([d4, e3], dim=1))
+
+        d2 = self.decoders[3](torch.cat([d3, e2], dim=1))
+
+        d1 = self.decoders[4](torch.cat([d2, e1], dim=1))
+
+        dt['pred_mask'] = torch.squeeze(d1,1).permute(0, 2, 1)
         return dt

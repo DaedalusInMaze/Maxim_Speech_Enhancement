@@ -10,6 +10,8 @@ import torch
 
 from tqdm import tqdm
 
+import pysepm
+
 def load_noise(noise_paths):
     print('loading noise')
     return {i : torch.load(path) for i, path in tqdm(enumerate(noise_paths))}
@@ -127,3 +129,12 @@ def generate_test_files(path, noise_path, snr):
             break
         
     return {'mixed': mixed, 'clean': clean, 'noise': noise}
+
+
+def evaluation(clean_speech, pred_speech, sr = 16_000):
+    """
+    return pesq, stoi, segSNR
+    """
+    return round(pysepm.pesq(clean_speech, pred_speech, 16_000)[1], 2), \
+           round(pysepm.stoi.stoi(clean_speech, pred_speech, 16_000), 2), \
+           round(pysepm.SNRseg(clean_speech, pred_speech, 16_000), 2)

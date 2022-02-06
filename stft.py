@@ -32,7 +32,7 @@ def logmag_transform(magnitude, recover = False):
         
         magnitude = torch.expm1(magnitude)
             
-        magnitude = torch.clamp(magnitude, min= 0, max= torch.amax(magnitude))
+        magnitude = torch.clamp(magnitude, min= 0)
         
         return magnitude
     
@@ -58,7 +58,7 @@ def quantize_transform(magnitude, recover = False):
     
     if recover:
         
-        magnitude = torch.clamp(magnitude, min= 0, max= torch.amax(magnitude))
+        magnitude = torch.clamp(magnitude, min= 0)
         
         magnitude = normalize_quantized_spectrum(magnitude)
         
@@ -99,7 +99,7 @@ class STFT(nn.Module):
                     win_length= self.win_len, 
                     hop_length= self.hop_len, 
                     window= self.window)).T
-
+                
                 mag = torch.abs(x_stft).to(device)
                 if key == 'mixed':
                     dt['phase'] = torch.exp(1j * torch.angle(x_stft)).to(device)
@@ -213,19 +213,20 @@ class torch_stft(nn.Module):
                              hop_length=self.hop_length,
                              win_length=self.win_length,
                              window=self.window,
-                             return_complex=True).T
-            fft = torch.squeeze(fft)
+                             return_complex=True).T.squeeze()
+            
             mag = torch.abs(fft)
             
             if key == 'mixed':
                 dt['phase'] = torch.exp(1j * torch.angle(fft))
 
             if self.transform_type == 'logmag':
-                dt[f'{key}_mag'] = logmag_transform(mag)
+                dt[f'{key}_mag'] = torch.log1p(mag)
             elif self.transform_type == 'lps':
-                dt[f'{key}_mag'] = lps_transform(mag)
-            else:
-                dt[f'{key}_mag'] = quantize_transform(mag)
+                dt[f'{key}_mag'] = torch.log10(mag ** 2)
+            elif self.transform_type == 'normal':
+                mag = mag / torch.amax(mag)
+                dt[f'{key}_mag'] = quantize_spectrum(mag)
 
         dt['mask'] = irm(dt['clean_mag'], dt['noise_mag'])
             
@@ -234,7 +235,7 @@ class torch_stft(nn.Module):
 
 class torch_istft(nn.Module):
     
-    def __init__(self, n_fft, hop_length, win_length, chunk_size, device, target, transform_type='logmag', cnn='1d'):
+    def __init__(self, n_fft, hop_length, win_length, chunk_size, device, target, transform_type, cnn):
         
         super(torch_istft, self).__init__()
         
@@ -250,20 +251,20 @@ class torch_istft(nn.Module):
     
     def mask_recover(self, dt):
         
-        batch, time, freq = dt['pred_y'].shape
+        batch, time, freq = dt['pred_mask'].shape
         
         if freq == 256:
             
-            dt['pred_y'] = F.pad(dt['pred_y'], (0, 1, 0, 0))
-            
+            pred_mask = F.pad(dt['pred_mask'], (0, 1, 0, 0))
             freq += 1
+            pred_mask = torch.reshape(pred_mask, (-1, freq))
         
-        dt['pred_y'] = torch.reshape(dt['pred_y'], (-1, freq))
+        else:
+            
+            pred_mask = torch.reshape(dt['pred_mask'], (-1, freq))
         
-        lens = dt['pred_y'].shape[0]
-        
-        dt['pred_y'] = dt['pred_y'] * dt['mixed_mag'][:lens]
-        
+        lens = pred_mask.shape[0]
+        dt['pred_y'] = pred_mask * dt['mixed_mag'][:lens]
         dt['pred_y'] = torch.reshape(dt['pred_y'], (batch, time, freq))
         
         return dt
@@ -271,9 +272,7 @@ class torch_istft(nn.Module):
     def cnn1d_recover(self, dt):
         
         dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][self.chunk_size : ])
-
         dt['true_y'] = torch.multiply(dt['clean_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
-
         dt['mixed_y'] = torch.multiply(dt['mixed_mag'][self.chunk_size : ], dt['phase'][self.chunk_size : ])
         
         return dt
@@ -281,13 +280,9 @@ class torch_istft(nn.Module):
     def cnn2d_recover(self, dt):
         
         dt['pred_y'] = dt['pred_y'].reshape(-1, dt['pred_y'].shape[2])
-        
         lens = dt['pred_y'].shape[0]
-        
         dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][:lens])
-        
         dt['true_y'] = torch.multiply(dt['clean_mag'][:lens], dt['phase'][:lens])
-        
         dt['mixed_y'] = torch.multiply(dt['mixed_mag'][:lens], dt['phase'][:lens])
         
         return dt
@@ -297,30 +292,38 @@ class torch_istft(nn.Module):
         if self.target == 'mask':  
             
             dt = self.mask_recover(dt)
-        
+        else:
+            if 'pred_mask' in dt:
+                dt['pred_y'] = dt['pred_mask']
+                
+            if dt['pred_y'].shape[2] == 256:
+                dt['pred_y'] = F.pad(dt['pred_y'], (0, 1, 0, 0))
+
         if self.transform_type == 'logmag':
             
             for key in ['mixed_mag', 'clean_mag', 'pred_y']:
             
-                dt[key] = logmag_transform(dt[key], recover=True)
+                dt[key] = torch.expm1(dt[key])
+                dt[key] = torch.clamp(dt[key], min= 0)
 
         elif self.transform_type == 'lps':
             
             for key in ['mixed_mag', 'clean_mag', 'pred_y']:
+                
+                dt[key] = torch.sqrt(10 ** dt[key])
             
-                dt[key] = lps_transform(dt[key], recover=True)
-            
-        else:
+        elif self.transform_type == 'normal':
             
             for key in ['mixed_mag', 'clean_mag', 'pred_y']:
                 
-                dt[key] = quantize_transform(dt[key], recover=True)
+                dt[key] = torch.clamp(dt[key], min= 0)
+                dt[key] = normalize_quantized_spectrum(dt[key])
 
         if self.cnn == '1d':
 
             dt = self.cnn1d_recover(dt)
             
-        else:
+        elif self.cnn == '2d':
             
             dt = self.cnn2d_recover(dt)
 
@@ -332,4 +335,6 @@ class torch_istft(nn.Module):
                                  win_length=self.win_length,
                                  window=self.window)
             
-        return dt            
+        return dt           
+
+    

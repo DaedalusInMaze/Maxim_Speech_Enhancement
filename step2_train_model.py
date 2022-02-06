@@ -21,8 +21,8 @@ from trainer import Trainer
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 ##########  define targets, checkpoint , and data path  ##############
-recovered_path = os.path.join(DATADIR, 'recovered_mask_limit')
-model_path = os.path.join(DATADIR, 'models_mask_limit')
+recovered_path = os.path.join(DATADIR, 'recovered_mask_limit6')
+model_path = os.path.join(DATADIR, 'models_mask_limit6')
 
 if not os.path.exists(model_path):
     os.mkdir(model_path)
@@ -42,7 +42,7 @@ noises = load_noise(noise_path)
 
 ##########  define datasets, and data loader  ##############
 noise_dataset = NoisyData(train_list, SNR, noises, random_noise=True)
-valid_dataset = NoisyData(valid_list[:50], SNR, noises, random_seed=True)
+valid_dataset = NoisyData(valid_list[:50], SNR, noises, random_seed=True, random_noise=True)
 test_dataset = NoisyData(test_list, SNR, noises, random_seed=True)
 
 train_dataloader = DataLoader(noise_dataset, batch_size=BATCH_SIZE, shuffle=True) 
@@ -51,6 +51,7 @@ test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 ##########  Pipeline ##############
 SE = SePipline(
+    version=version,
     n_fft=K, 
     hop_len=N_s, 
     win_len= N_d, 
@@ -59,7 +60,9 @@ SE = SePipline(
     chunk_size=CHUNK_SIZE,
     transform_type = transform_type,
     stft_type = stft_type,
-    target = target)
+    target = target,
+    cnn= cnn
+)
 
 optimizer = torch.optim.Adam(SE.parameters(), lr=lr)
 criterion = nn.MSELoss()
