@@ -18,14 +18,16 @@ from utils import get_audio_path_list, load_audio, save_wav, snr_mixer, generate
 import os
 
 import random
+
+import time
   
-model_path = os.path.join(DATADIR, 'models_mag_limit2')
-pretrain_model_name = '9.09_71_epoch.pth.tar'
+model_path = os.path.join(DATADIR, 'models_mask_limit5')
+pretrain_model_name = '11.84_62_epoch.pth.tar'
 DEVICE = 'cpu'
 transform_type = 'logmag'
 
 SE = SePipline(
-    version='v10',
+    version='v11',
     n_fft=K, 
     hop_len=N_s, 
     win_len= N_d, 
@@ -69,8 +71,14 @@ for key, value in dt.items():
     dt[key] = torch.tensor(value, device = DEVICE)
 
 with torch.no_grad():
+    torch.cuda.synchronize()
+    time_start = time.time()
 
     dt = SE(dt)
+    torch.cuda.synchronize()
+    time_end = time.time()
+    time_sum = time_end - time_start
+    print(time_sum)
 
 if not os.path.exists('recovered'):
 

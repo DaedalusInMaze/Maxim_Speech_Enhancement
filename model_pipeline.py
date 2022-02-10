@@ -24,7 +24,7 @@ class SePipline(nn.Module):
             chunk = ChunkDatav2(chunk_size= 16, target= 'clean_mag')
             model = SENetv3()
         elif version == 'v3':
-            print(version)
+            print(version) #models_mask
             chunk = ChunkDatav2(chunk_size= 16, target= 'mask')
             model = SENetv3()
         elif version == 'v4':
@@ -55,10 +55,14 @@ class SePipline(nn.Module):
             print(version)
             chunk = ChunkDatav3(chunk_size= chunk_size, target= 'clean_mag')
             model = SENetv8()
-        elif version == 'v11':#models_mask_limit5 # chuck_size=32 and models_mask_limit6 # chuck_size=128 
+        elif version == 'v11':#models_mask_limit5 # chuck_size=32 and models_mask_limit6 # chuck_size=128 and # models_mask_limit7 #chunk_size = 64 and #models_mask_limit8 # chuck_size=16
             print(version)
             chunk = ChunkDatav3(chunk_size= chunk_size, target= 'mask')
             model = SENetv10()
+        elif version == 'v12':
+            print(version) #models_mask2
+            chunk = ChunkDatav2(chunk_size= 16, target= 'mask')
+            model = SENetv11()
 
         
         if stft_type == 'torch':

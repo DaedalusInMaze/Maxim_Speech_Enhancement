@@ -6,17 +6,17 @@ SNR = [-10, 5, 0, 5, 10]
 N_d = 512  # window duration (samples).
 N_s = 128  # window shift (samples).
 K = 512  # number of frequency bins.
-CHUNK_SIZE = 128 # temporal context 128*512 samples ~ 4sec
+CHUNK_SIZE = 16 # temporal context 128*512 samples ~ 4sec
 
 EPOCH = 40
 BATCH_SIZE = 1
-lr = 1e-4
+lr = 5e-5
 
 transform_type = 'logmag' # option: transform_type = 'logmag', transform_type = 'lps', transform_type = 'normal'
-action = 'train' # option: action = 'retrain', action = 'train'
-pretrain_model_name = '9.09_71_epoch.pth.tar'
+action = 'retrain' # option: action = 'retrain', action = 'train'
+pretrain_model_name = 'best_model.pth.tar'
 
 stft_type = 'torch' #option: stft_type = 'torch', stft_type = 'librosa'
 cnn = '2d'
 target = 'mask' #option: target = 'clean_mag', target = 'noise_mag', target = 'mask'
-version = 'v11'
+version = 'v12'

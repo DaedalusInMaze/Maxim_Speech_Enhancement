@@ -54,7 +54,8 @@ class Trainer():
                         'optimizer': self.optimizer.state_dict()
                     }
 
-                    torch.save(state_dict, os.path.join(kwargs['model_path'], f'{segsnr}_{epoch}_epoch.pth.tar'))
+                    # torch.save(state_dict, os.path.join(kwargs['model_path'], f'{segsnr}_{epoch}_epoch.pth.tar'))
+                    torch.save(state_dict, os.path.join(kwargs['model_path'], f'best_model.pth.tar'))
                 
             self._test(self.test_loader, epoch, *args, **kwargs)
 
