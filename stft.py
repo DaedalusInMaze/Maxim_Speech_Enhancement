@@ -1,12 +1,9 @@
+import librosa
 import torch
-
 import torch.nn as nn
-
 import torch.nn.functional as F
 
-import librosa
-
-from utils import quantize_spectrum, normalize_quantized_spectrum
+from utils import normalize_quantized_spectrum, quantize_spectrum
 
 
 def irm(clean_mag, noise_mag):
@@ -263,8 +260,7 @@ class torch_istft(nn.Module):
             
             pred_mask = torch.reshape(dt['pred_mask'], (-1, freq))
         
-        lens = pred_mask.shape[0]
-        dt['pred_y'] = pred_mask * dt['mixed_mag'][:lens]
+        dt['pred_y'] = pred_mask * dt['mixed_mag']
         dt['pred_y'] = torch.reshape(dt['pred_y'], (batch, time, freq))
         
         return dt
@@ -280,10 +276,10 @@ class torch_istft(nn.Module):
     def cnn2d_recover(self, dt):
         
         dt['pred_y'] = dt['pred_y'].reshape(-1, dt['pred_y'].shape[2])
-        lens = dt['pred_y'].shape[0]
-        dt['pred_y'] = torch.multiply(dt['pred_y'], dt['phase'][:lens])
-        dt['true_y'] = torch.multiply(dt['clean_mag'][:lens], dt['phase'][:lens])
-        dt['mixed_y'] = torch.multiply(dt['mixed_mag'][:lens], dt['phase'][:lens])
+        lens = dt['phase'].shape[0]
+        dt['pred_y'] = torch.multiply(dt['pred_y'][:lens], dt['phase'])
+        dt['true_y'] = torch.multiply(dt['clean_mag'][:lens], dt['phase'])
+        dt['mixed_y'] = torch.multiply(dt['mixed_mag'][:lens], dt['phase'])
         
         return dt
     
@@ -296,8 +292,8 @@ class torch_istft(nn.Module):
             if 'pred_mask' in dt:
                 dt['pred_y'] = dt['pred_mask']
                 
-            if dt['pred_y'].shape[2] == 256:
-                dt['pred_y'] = F.pad(dt['pred_y'], (0, 1, 0, 0))
+            # if dt['pred_y'].shape[2] == 256:
+            #     dt['pred_y'] = F.pad(dt['pred_y'], (0, 1, 0, 0))
 
         if self.transform_type == 'logmag':
             

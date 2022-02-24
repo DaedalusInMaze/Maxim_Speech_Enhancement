@@ -3,30 +3,25 @@
 import os
 
 import torch
-
 import torch.nn as nn
-
-from utils import get_audio_path_list, load_noise
-
-from dataset import NoisyData
-
 from torch.utils.data import DataLoader
 
 from config import *
-
+from dataset import NoisyData
 from model_pipeline import SePipline, load_model
-
 from trainer import Trainer
+from utils import get_audio_path_list, load_noise
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 ##########  define targets, checkpoint , and data path  ##############
-recovered_path = os.path.join(DATADIR, 'recovered_mask2')
-model_path = os.path.join(DATADIR, 'models_mask2')
+recovered_path = os.path.join(DATADIR, 'recovered_v4')
+model_path = os.path.join(DATADIR, 'models_v4')
 
 if not os.path.exists(model_path):
     os.mkdir(model_path)
 
+# train_list = get_audio_path_list(os.path.join(DATADIR, 'train_full'), 'flac')
 train_list = get_audio_path_list(os.path.join(DATADIR, 'train'), 'flac')
 valid_list = get_audio_path_list(os.path.join(DATADIR, 'valid'), 'flac')
 test_list = get_audio_path_list('testaudio', 'flac')

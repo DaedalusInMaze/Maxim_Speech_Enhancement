@@ -1,12 +1,11 @@
-from tqdm import tqdm
-
-import torch
-
 import os
 
-from stft import ISTFT, torch_istft
+import torch
+from tqdm import tqdm
 
-from utils import save_wav, evaluation
+from stft import ISTFT, torch_istft
+from utils import evaluation, save_wav
+
 
 class Trainer():
 
@@ -141,7 +140,7 @@ class Trainer():
 
                 self.model.eval()
 
-                batch = self.model(batch)
+                batch = self.model(batch, train=False)
 
                 loss = self.criterion(batch['pred_mask'], batch['y'])
 
@@ -193,7 +192,7 @@ class Trainer():
 
                     self.model.eval()
 
-                    batch = self.model(batch)
+                    batch = self.model(batch, train=False)
 
                     if not os.path.exists(kwargs['recovered_path']):
 

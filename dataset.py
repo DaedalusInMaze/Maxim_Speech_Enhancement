@@ -2,7 +2,7 @@ import torch
 
 from torch.utils.data import Dataset
 
-from utils import load_audio, snr_mixer
+from utils import load_audio, snr_mixer2, snr_mixer
 
 import numpy as np
 
@@ -54,7 +54,7 @@ class NoisyData(Dataset):
 
             noise_snippet = self.noise[noise_type][noise_start : noise_start + clean.shape[0]]
 
-            valid, mixed, noise = snr_mixer(clean, noise_snippet, noise_snr)
+            valid, mixed, noise = snr_mixer2(clean, noise_snippet, noise_snr)
             
             if valid:
                 break

@@ -1,16 +1,13 @@
-import os, glob
+import glob
+import os
 
 import librosa
-
 import numpy as np
-
+import pysepm
 import soundfile as sf
-
 import torch
-
 from tqdm import tqdm
 
-import pysepm
 
 def load_noise(noise_paths):
     print('loading noise')
@@ -72,9 +69,10 @@ def snr_mixer(clean, noise, snr):
     """
     mix and scale clean speech and noise
     """
+    eps= 1e-8
     # Normalizing to rms equal to 1
     rmsclean = np.mean(clean[:] ** 2) ** 0.5
-    rmsnoise = np.mean(noise[:] ** 2) ** 0.5
+    rmsnoise = np.mean(noise[:] ** 2) ** 0.5 + eps
 
     cleanfactor = 10 ** (snr / 20)
     
@@ -84,11 +82,24 @@ def snr_mixer(clean, noise, snr):
         # Set the noise level for a given SNR
         noisyspeech = clean + a*noise
         return valid, noisyspeech, a*noise
-    else:
-        valid = False
-        return valid, 0, 0
+    # else:
+    #     valid = False
+    #     return valid, 0, 0
     
+def snr_mixer2(clean, noise, snr):
+    eps= 1e-8
+    s_pwr = np.var(clean)
+    noise = noise - np.mean(noise)
+    n_var = s_pwr / (10**(snr / 10))
+    noise = np.sqrt(n_var) * noise / (np.std(noise) + eps)
+    noisyspeech = clean + noise
 
+    if max(abs(noisyspeech)) > 1:
+        noisyspeech /= max(abs(noisyspeech))
+    valid = True
+    return valid, noisyspeech, noise
+    
+    
 def quantize_spectrum(data, num_bits=8):
     """
     Quantize spectrum

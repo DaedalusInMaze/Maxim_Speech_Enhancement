@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+
 from modules import *
 
 
@@ -233,7 +234,7 @@ class SENetv4(nn.Module):
             x = layer(x + s)
         
         x = x[:,:,:257,:]
-        dt['pred_mask'] = torch.squeeze(x).permute(0, 2, 1)
+        dt['pred_mask'] = torch.squeeze(x,1).permute(0, 2, 1)
 
         return dt
 class SENetv5(nn.Module):

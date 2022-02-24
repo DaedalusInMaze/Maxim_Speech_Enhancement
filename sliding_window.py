@@ -1,5 +1,7 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 
 class ChunkData(nn.Module):
 
@@ -50,7 +52,11 @@ class ChunkDatav2(nn.Module):
 
             device = dt['mixed_mag'].device
 
-            chunks = time // self.chunk_size
+            chunks = time // self.chunk_size + 1
+            
+            dt['mixed_mag'] = F.pad(dt['mixed_mag'], (0, 0, 0, self.chunk_size - time % self.chunk_size))
+
+            dt[self.target] = F.pad(dt[self.target], (0, 0, 0, self.chunk_size - time % self.chunk_size))
 
             dt['x'] = torch.zeros((chunks, self.chunk_size, freq), device= device)
 
@@ -82,7 +88,11 @@ class ChunkDatav3(nn.Module):
 
             device = dt['mixed_mag'].device
 
-            chunks = time // self.chunk_size
+            chunks = time // self.chunk_size + 1
+
+            dt['mixed_mag'] = F.pad(dt['mixed_mag'], (0, 0, 0, self.chunk_size - time % self.chunk_size))
+
+            dt[self.target] = F.pad(dt[self.target], (0, 0, 0, self.chunk_size - time % self.chunk_size))
 
             dt['x'] = torch.zeros((chunks, self.chunk_size, freq), device= device)
 

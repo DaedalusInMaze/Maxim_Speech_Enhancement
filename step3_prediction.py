@@ -1,28 +1,23 @@
 
 ############################################### prediction ###########################################
 
-import torch
-
-import torch.nn as nn
+import os
+import random
+import time
 
 import numpy as np
-
-from stft import torch_istft
+import torch
+import torch.nn as nn
 
 from config import *
-
 from model_pipeline import SePipline, load_model
+from stft import torch_istft
+from utils import (generate_test_files, get_audio_path_list, load_audio,
+                   save_wav, snr_mixer)
 
-from utils import get_audio_path_list, load_audio, save_wav, snr_mixer, generate_test_files
-
-import os
-
-import random
-
-import time
-  
-model_path = os.path.join(DATADIR, 'models_mask_limit5')
-pretrain_model_name = '11.84_62_epoch.pth.tar'
+model_path = os.path.join(DATADIR, 'models_mask_limit10')
+# pretrain_model_name = '12.29_53_epoch.pth.tar'
+pretrain_model_name = 'best_model.pth.tar'
 DEVICE = 'cpu'
 transform_type = 'logmag'
 
@@ -51,12 +46,12 @@ test_list = get_audio_path_list(os.path.join(DATADIR, 'valid'), 'flac')
 raw_noise_path = os.path.join(DATADIR, 'raw_noise')
 noise_path = []
 # noise_path.extend(get_audio_path_list(raw_noise_path, 'pt'))
-noise_path.append(os.path.join(raw_noise_path, 'white_noise.pt'))
-noise_path.append(os.path.join(raw_noise_path, 'siren_noise.pt'))
-noise_path.append(os.path.join(raw_noise_path, 'baby.pt'))
-noise_path.append(os.path.join(raw_noise_path, 'engine_sound.pt'))
+# noise_path.append(os.path.join(raw_noise_path, 'white_noise.pt'))
+# noise_path.append(os.path.join(raw_noise_path, 'siren_noise.pt'))
+# noise_path.append(os.path.join(raw_noise_path, 'baby.pt'))
+# noise_path.append(os.path.join(raw_noise_path, 'engine_sound.pt'))
 noise_path.append(os.path.join(raw_noise_path, 'dog_barking.pt'))
-noise_path.append(os.path.join(raw_noise_path, 'traffic_sounds.pt'))
+# noise_path.append(os.path.join(raw_noise_path, 'traffic_sounds.pt'))
 # noise_path.append(os.path.join('testnoise', 'helicopter.pt'))
 ########### 
 
@@ -74,7 +69,7 @@ with torch.no_grad():
     torch.cuda.synchronize()
     time_start = time.time()
 
-    dt = SE(dt)
+    dt = SE(dt, train=False)
     torch.cuda.synchronize()
     time_end = time.time()
     time_sum = time_end - time_start

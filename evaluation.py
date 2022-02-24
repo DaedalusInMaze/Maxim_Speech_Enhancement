@@ -18,8 +18,8 @@ from trainer import Trainer
 
 from tqdm import tqdm
 
-CHUNK_SIZE = 16
-model_path = os.path.join(DATADIR, 'models_mask2')
+CHUNK_SIZE = 128
+model_path = os.path.join(DATADIR, 'models_mask_limit10')
 pretrain_model_name = 'best_model.pth.tar'
 DEVICE = 'cuda'
 transform_type = 'logmag'
@@ -27,7 +27,7 @@ transform_type = 'logmag'
 
 
 SE = SePipline(
-    version='v12',
+    version='v11',
     n_fft=K, 
     hop_len=N_s, 
     win_len= N_d, 
@@ -73,7 +73,7 @@ for batch in valid_bar:
 
         SE.eval()
 
-        batch = SE(batch)
+        batch = SE(batch, train= False)
 
         loss = criterion(batch['pred_mask'], batch['y'])
 
