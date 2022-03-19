@@ -1,7 +1,7 @@
 # Speech Enhancement Project with Maxim Integrated
 ## Authors: Stella Cao, Renjie Liu, Huaxuan Wang, Curtis Zhuang
 ## Advisors: Batuhan Gundogdu, Utku Pamuksuz
-
+### Best In Show Capstone Showcase
 
 Capstone Project with Maxim Integrated working on building a light-weighted Deep Learning model that will enable the local speech enhancent processing on portable devices.
 
